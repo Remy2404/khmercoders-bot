@@ -42,7 +42,7 @@ npm run migrate:dev
 To apply migrations to the production database:
 
 ```
-npm ``run migrate:prod
+npm run migrate:prod
 ```
 
 ### Telegram Bot Setup
