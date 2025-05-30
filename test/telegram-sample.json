@@ -1,0 +1,21 @@
+{
+  "update_id": 134392920,
+  "message": {
+    "message_id": 14,
+    "from": {
+      "id": 188725399,
+      "is_bot": false,
+      "first_name": "Visal",
+      "username": "invisal89",
+      "is_premium": true
+    },
+    "chat": {
+      "id": -1002603378009,
+      "title": "Khmer Coders - Bot Development",
+      "is_forum": true,
+      "type": "supergroup"
+    },
+    "date": 1748532867,
+    "text": "Hello from Telegram!"
+  }
+}

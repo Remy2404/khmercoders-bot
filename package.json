@@ -1,14 +1,17 @@
 {
-	"name": "kcc-bot",
-	"scripts": {
-		"dev": "wrangler dev",
-		"deploy": "wrangler deploy --minify",
-		"cf-typegen": "wrangler types --env-interface CloudflareBindings"
-	},
-	"dependencies": {
-		"hono": "^4.7.10"
-	},
-	"devDependencies": {
-		"wrangler": "^4.18.0"
-	}
+  "name": "kcc-bot",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "migrate:dev": "wrangler d1 migrations apply kcc-chatbot",
+    "migrate:prod": "wrangler d1 migrations apply kcc-chatbot --remote",
+    "test:webhook": "curl -X POST http://localhost:8787/telegram/webhook -H \"Content-Type: application/json\" -d @test/telegram-sample.json"
+  },
+  "dependencies": {
+    "hono": "^4.7.10"
+  },
+  "devDependencies": {
+    "wrangler": "^4.18.0"
+  }
 }
