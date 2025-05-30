@@ -51,12 +51,12 @@ app.post("/telegram/webhook", async (c) => {
       return c.json({ success: true, message: "Ignored bot message" });
     }
 
-    // Format display name (username or first+last name)
-    const displayName =
-      message.from.username ||
-      `${message.from.first_name}${
-        message.from.last_name ? " " + message.from.last_name : ""
-      }`;
+    // Format display name (prioritize first+last name over username)
+    const displayName = message.from.first_name
+      ? `${message.from.first_name}${
+          message.from.last_name ? " " + message.from.last_name : ""
+        }`
+      : message.from.username || "Unknown User";
 
     console.log(
       `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`
