@@ -46,7 +46,7 @@ app.post("/telegram/webhook", async (c) => {
       console.log(
         `[${timestamp}] Ignored message from bot: ${
           message.from.username || message.from.first_name
-        }`
+        }`,
       );
       return c.json({ success: true, message: "Ignored bot message" });
     }
@@ -58,15 +58,23 @@ app.post("/telegram/webhook", async (c) => {
         }`
       : message.from.username || "Unknown User";
 
+    const text = message.text || "";
+
     console.log(
-      `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`
+      `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`,
     );
 
     // Track the message in our database
-    await trackMessage(c.env.DB, "telegram", message.from.id, displayName);
+    await trackMessage(
+      c.env.DB,
+      "telegram",
+      message.from.id,
+      displayName,
+      text.length,
+    );
 
     console.log(
-      `[${timestamp}] Successfully tracked message from user: ${displayName}`
+      `[${timestamp}] Successfully tracked message from user: ${displayName}`,
     );
     return c.json({ success: true });
   } catch (error) {

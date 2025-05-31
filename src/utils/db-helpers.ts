@@ -7,13 +7,15 @@
  * @param platform - Platform identifier (e.g. 'telegram')
  * @param userId - User ID from the platform
  * @param displayName - User's display name
+ * @param messageLength - Length of the message content
  * @returns Promise<void>
  */
 export async function trackMessage(
   db: D1Database,
   platform: string,
   userId: number,
-  displayName: string
+  displayName: string,
+  messageLength: number
 ): Promise<void> {
   try {
     const timestamp = new Date().toISOString();
@@ -21,7 +23,7 @@ export async function trackMessage(
     const today = timestamp.split("T")[0];
 
     console.log(
-      `[${timestamp}] Tracking message for user ${displayName} (${userId}) on ${platform}`
+      `[${timestamp}] Tracking message for user ${displayName} (${userId}) on ${platform}, length: ${messageLength}`
     );
 
     // First ensure the user exists in the users table
@@ -35,19 +37,21 @@ export async function trackMessage(
 
     console.log(`[${timestamp}] User record ensured for ${displayName}`);
 
-    // Then update the message count
+    // Then update the message count and total message length
     await db
       .prepare(
-        `INSERT INTO chat_counter (chat_date, platform, user_id, message_count)
-       VALUES (?, ?, ?, 1)
+        `INSERT INTO chat_counter (chat_date, platform, user_id, message_count, message_length)
+       VALUES (?, ?, ?, 1, ?)
        ON CONFLICT (chat_date, platform, user_id)
-       DO UPDATE SET message_count = message_count + 1`
+       DO UPDATE SET 
+         message_count = message_count + 1,
+         message_length = message_length + ?`
       )
-      .bind(today, platform, userId)
+      .bind(today, platform, userId, messageLength, messageLength)
       .run();
 
     console.log(
-      `[${timestamp}] Message count updated for ${displayName} on ${today}`
+      `[${timestamp}] Message count and length updated for ${displayName} on ${today}`
     );
   } catch (error) {
     const timestamp = new Date().toISOString();
