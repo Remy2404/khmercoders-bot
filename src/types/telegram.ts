@@ -31,6 +31,17 @@ export interface TelegramMessage {
     width: number;
     height: number;
   }>;
+  new_chat_member?: TelegramUser;
+  new_chat_members?: TelegramUser[];
+  left_chat_member?: TelegramUser;
+  new_chat_title?: string;
+  new_chat_photo?: any[];
+  delete_chat_photo?: boolean;
+  group_chat_created?: boolean;
+  supergroup_chat_created?: boolean;
+  channel_chat_created?: boolean;
+  message_auto_delete_timer_changed?: any;
+  pinned_message?: TelegramMessage;
 }
 
 export interface TelegramUpdate {

@@ -18,23 +18,34 @@ app.post("/telegram/webhook", async (c) => {
     // Parse the incoming webhook data
     const update: TelegramUpdate = await c.req.json();
 
-    // Early return if no message data found
-    if (
-      !update.message &&
-      !update.edited_message &&
-      !update.channel_post &&
-      !update.edited_channel_post
-    ) {
-      console.log(`[${timestamp}] No message data found in the update`);
-      return c.json({ success: false, error: "No message data found" });
+    // Early return if no new message found (we only want to count new messages)
+    if (!update.message) {
+      console.log(
+        `[${timestamp}] No new message found in the update or it's an edited/channel message`
+      );
+      return c.json({ success: true, message: "Ignoring non-new messages" });
     }
 
-    // Use the first available message from the update
-    const message =
-      update.message ||
-      update.edited_message ||
-      update.channel_post ||
-      update.edited_channel_post;
+    // Only use regular new messages
+    const message = update.message;
+
+    // Don't count service messages (join/leave, group title changes, etc.)
+    if (
+      message.new_chat_member ||
+      message.new_chat_members ||
+      message.left_chat_member ||
+      message.new_chat_title ||
+      message.new_chat_photo ||
+      message.delete_chat_photo ||
+      message.group_chat_created ||
+      message.supergroup_chat_created ||
+      message.channel_chat_created ||
+      message.message_auto_delete_timer_changed ||
+      message.pinned_message
+    ) {
+      console.log(`[${timestamp}] Ignoring service message (join/leave/etc)`);
+      return c.json({ success: true, message: "Ignoring service message" });
+    }
 
     // We can only count messages that have a sender
     if (!message || !message.from) {
