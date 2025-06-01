@@ -5,7 +5,7 @@
  *
  * @param db - D1Database instance
  * @param platform - Platform identifier (e.g. 'telegram')
- * @param userId - User ID from the platform
+ * @param userId - User ID from the platform (string)
  * @param displayName - User's display name
  * @param messageLength - Length of the message content
  * @returns Promise<void>
@@ -13,7 +13,7 @@
 export async function trackMessage(
   db: D1Database,
   platform: string,
-  userId: number,
+  userId: string,
   displayName: string,
   messageLength: number
 ): Promise<void> {
