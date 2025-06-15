@@ -53,7 +53,7 @@ async function generateChatSummary(
           },
           {
             role: "user",
-            content: `Summarize the following 200 Telegram messages:\n\n${conversationHistory}`,
+            content: `Summarize the following ${messages.length} Telegram messages:\n\n${conversationHistory}`,
           },
           { role: "user", content: userPrompt },
         ],
