@@ -1,8 +1,218 @@
 import { Context } from "hono";
-import { TelegramUpdate } from "../types/telegram";
+import { TelegramMessage, TelegramUpdate } from "../types/telegram";
 import { trackMessage } from "../utils/db-helpers";
-import { recordTelegramChannelMessage } from "../utils/telegram-helpers";
-import "../types/bindings";
+import {
+  fetchRecentMessages,
+  recordTelegramChannelMessage,
+  sendTelegramMessage,
+  editTelegramMessage,
+} from "../utils/telegram-helpers";
+
+/**
+ * Generate a summary of chat messages using Cloudflare AI
+ *
+ * @param messages - Array of chat messages
+ * @param ai - Cloudflare AI instance
+ * @returns Promise<string> - The generated summary
+ */
+async function generateChatSummary(
+  userPrompt: string,
+  messages: Array<{
+    message_text: string;
+    sender_name: string;
+    message_date: string;
+  }>,
+  ai: Ai<AiModels>
+): Promise<string> {
+  try {
+    // Build a conversation history to summarize
+    const conversationHistory = messages
+      .reverse() // Order from oldest to newest
+      .map((msg) => {
+        // Format date for display - convert ISO date to more readable format
+        const date = new Date(msg.message_date);
+        const formattedDate = date.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        return `[${formattedDate}] ${msg.sender_name}: ${msg.message_text}`;
+      })
+      .join("\n");
+
+    // Call Cloudflare AI to generate summary
+    const response: AiTextGenerationOutput = await ai.run(
+      "@cf/meta/llama-3.1-8b-instruct",
+      {
+        messages: [
+          {
+            role: "system",
+            content:
+              "Summarize the following Telegram chat conversation in a clear and concise paragraph. Always make it less than 400 characters",
+          },
+          {
+            role: "system",
+            content: `Last 200 messages\n${conversationHistory}`,
+          },
+          { role: "user", content: userPrompt },
+        ],
+      },
+      {
+        gateway: {
+          id: "khmercoders-bot-summary-gw",
+        },
+      }
+    );
+
+    // Check if the response is a ReadableStream (which we can't directly use)
+    if (response instanceof ReadableStream) {
+      console.warn(
+        "Received ReadableStream response which cannot be processed"
+      );
+      return "Sorry, I couldn't generate a summary at this time.";
+    }
+
+    // Return the response if available
+    return response?.response || "No summary generated";
+  } catch (error) {
+    console.error(`Error generating summary:`, error);
+    return "Sorry, I couldn't generate a summary at this time.";
+  }
+}
+
+/**
+ * Process the /summary command
+ *
+ * @param c - Hono context
+ * @param message - Telegram message
+ * @param botToken - Telegram bot token
+ */
+async function processSummaryCommand(
+  c: Context<{ Bindings: CloudflareBindings }>,
+  message: TelegramMessage,
+  botToken: string
+): Promise<void> {
+  const chatId = message.chat.id.toString();
+  const timestamp = new Date().toISOString();
+  const threadId = message.message_thread_id?.toString();
+
+  try {
+    console.log(
+      `[${timestamp}] Processing /summary command for chat ${chatId}${
+        threadId ? `, thread ${threadId}` : ""
+      }`
+    ); // Send initial response and get the message ID for later editing
+    const initialResponse = await sendTelegramMessage(
+      botToken,
+      chatId,
+      "⏳ Generating summary of recent messages... This may take a moment.",
+      threadId
+    );
+
+    // Parse the response to get the message ID
+    let messageId: number | null = null;
+    try {
+      const responseData = (await initialResponse.json()) as any; // Using any as we don't have a precise type for Telegram API response
+      messageId = responseData?.result?.message_id || null;
+    } catch (error) {
+      console.error(`[${timestamp}] Error parsing initial response:`, error);
+      // Continue without message ID
+    }
+
+    if (!messageId) {
+      console.error(
+        `[${timestamp}] Failed to get message ID from initial response`
+      );
+      // Continue with the process but we won't be able to edit the message
+    } // Fetch recent messages, filtering by thread if applicable
+    const messages = await fetchRecentMessages(c.env.DB, chatId, 200, threadId);
+
+    if (messages.length === 0) {
+      // If we have a message ID, edit the message, otherwise send a new one
+      if (messageId) {
+        await editTelegramMessage(
+          botToken,
+          chatId,
+          messageId,
+          "No messages found to summarize.",
+          threadId
+        );
+      } else {
+        await sendTelegramMessage(
+          botToken,
+          chatId,
+          "No messages found to summarize.",
+          threadId
+        );
+      }
+      return;
+    }
+
+    console.log(
+      `[${timestamp}] Fetched ${messages.length} messages for summarization${
+        threadId ? ` from thread ${threadId}` : ""
+      }`
+    );
+
+    // User prompt
+    const userPrompt = message.text?.replace("/summary", "").trim() || "";
+
+    // Generate summary
+    const summary = await generateChatSummary(userPrompt, messages, c.env.AI);
+    const currentDate = new Date().toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const summaryText = `<b>📝 Chat Summary</b> (as of ${currentDate})\n\n${summary}`; // If we have a message ID, edit the existing message, otherwise send a new one
+    if (messageId) {
+      await editTelegramMessage(
+        botToken,
+        chatId,
+        messageId,
+        summaryText,
+        threadId
+      );
+      console.log(
+        `[${timestamp}] Summary edited in message ${messageId} for chat ${chatId}${
+          threadId ? `, thread ${threadId}` : ""
+        }`
+      );
+    } else {
+      await sendTelegramMessage(botToken, chatId, summaryText, threadId);
+      console.log(
+        `[${timestamp}] Summary sent to chat ${chatId}${
+          threadId ? `, thread ${threadId}` : ""
+        } (could not edit)`
+      );
+    }
+  } catch (error) {
+    console.error(`[${timestamp}] Error processing summary command:`, error);
+
+    // Send error message
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      "Sorry, an error occurred while generating the summary.",
+      threadId
+    );
+  }
+}
+
+/**
+ * Check if the message is a /summary command
+ *
+ * @param text - Message text
+ * @returns boolean
+ */
+function isSummaryCommand(text?: string): boolean {
+  if (!text) return false;
+  return text.startsWith("/summary");
+}
 
 /**
  * Handle incoming telegram webhook requests
@@ -18,6 +228,8 @@ export async function handleTelegramWebhook(
 
     // Parse the incoming webhook data
     const update: TelegramUpdate = await c.req.json();
+
+    console.log("Request body:", JSON.stringify(update, null, 2));
 
     // Early return if no new message found (we only want to count new messages)
     if (!update.message) {
@@ -46,6 +258,22 @@ export async function handleTelegramWebhook(
     ) {
       console.log(`[${timestamp}] Ignoring service message (join/leave/etc)`);
       return c.json({ success: true, message: "Ignoring service message" });
+    }
+
+    // Get bot token from Cloudflare Secret Store
+    const botToken = await c.env.TELEGRAM_BOT_TOKEN.get();
+
+    if (message.text && isSummaryCommand(message.text)) {
+      if (botToken) {
+        // Use waitUntil to process the command asynchronously
+        c.executionCtx.waitUntil(
+          processSummaryCommand(c, message, botToken.toString())
+        );
+      } else {
+        console.error(
+          `[${timestamp}] Bot token not found in environment variables`
+        );
+      }
     }
 
     // We can only count messages that have a sender

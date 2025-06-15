@@ -21,5 +21,15 @@
       "database_id": "48058eec-0cb2-42e7-a166-6bc3cca3c686",
       "migrations_dir": "migrations"
     }
+  ],
+  "ai": {
+    "binding": "AI"
+  },
+  "secrets_store_secrets": [
+    {
+      "binding": "TELEGRAM_BOT_TOKEN",
+      "store_id": "06617dc713554484991765fae9fd6d9b",
+      "secret_name": "khmercoders-telegram-bottoken"
+    }
   ]
 }

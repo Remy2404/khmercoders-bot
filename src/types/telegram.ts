@@ -24,6 +24,7 @@ export interface TelegramMessage {
   chat: TelegramChat;
   date: number;
   text?: string;
+  message_thread_id?: number;
   photo?: Array<{
     file_id: string;
     file_unique_id: string;

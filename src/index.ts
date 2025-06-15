@@ -2,7 +2,6 @@ import { Hono } from "hono";
 import { DiscordWebhookPayload } from "./types/discord";
 import { handleTelegramWebhook } from "./handlers/telegramHandler";
 import { trackMessage } from "./utils/db-helpers";
-import "./types/bindings";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
