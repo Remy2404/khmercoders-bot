@@ -28,7 +28,6 @@ export async function handleTelegramWebhook(
       const message = update.channel_post || update.message;
       if (message) {
         await recordTelegramChannelMessage(c.env.DB, message);
-        return c.json({ success: true, message: "Channel message recorded" });
       }
     }
 
