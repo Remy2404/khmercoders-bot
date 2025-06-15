@@ -19,18 +19,6 @@ export async function handleTelegramWebhook(
     // Parse the incoming webhook data
     const update: TelegramUpdate = await c.req.json();
 
-    // Handle channel posts or supergroup messages
-    if (
-      update.channel_post ||
-      update.message?.chat?.type === "channel" ||
-      update.message?.chat?.type === "supergroup"
-    ) {
-      const message = update.channel_post || update.message;
-      if (message) {
-        await recordTelegramChannelMessage(c.env.DB, message);
-      }
-    }
-
     // Early return if no new message found (we only want to count new messages)
     if (!update.message) {
       console.log(
@@ -74,6 +62,11 @@ export async function handleTelegramWebhook(
         }`
       );
       return c.json({ success: true, message: "Ignored bot message" });
+    }
+
+    // Handle channel posts or supergroup messages
+    if (message) {
+      await recordTelegramChannelMessage(c.env.DB, message);
     }
 
     // Format display name (prioritize first+last name over username)
