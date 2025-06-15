@@ -42,6 +42,31 @@ export interface TelegramMessage {
   channel_chat_created?: boolean;
   message_auto_delete_timer_changed?: any;
   pinned_message?: TelegramMessage;
+  forward_from?: TelegramUser;
+  forward_from_chat?: TelegramChat;
+  forward_from_message_id?: number;
+  forward_date?: number;
+  reply_to_message?: TelegramMessage;
+  video?: {
+    file_id: string;
+    file_unique_id: string;
+    width: number;
+    height: number;
+    duration: number;
+  };
+  document?: {
+    file_id: string;
+    file_unique_id: string;
+    file_name?: string;
+    mime_type?: string;
+  };
+  audio?: {
+    file_id: string;
+    file_unique_id: string;
+    duration: number;
+    title?: string;
+    performer?: string;
+  };
 }
 
 export interface TelegramUpdate {
