@@ -130,11 +130,11 @@ export async function sendTelegramMessage(
     chat_id: string | number;
     text: string;
     message_thread_id?: string | number;
-    parsing_mode: "HTML";
+    parse_mode: "HTML";
   } = {
     chat_id: chatId,
     text: text,
-    parsing_mode: "HTML", // Use HTML parsing for better formatting
+    parse_mode: "HTML", // Use HTML parsing for better formatting
   };
 
   if (threadId) {
@@ -228,12 +228,12 @@ export async function editTelegramMessage(
     message_id: number;
     text: string;
     message_thread_id?: string | number;
-    parsing_mode?: string;
+    parse_mode?: string;
   } = {
     chat_id: chatId,
     message_id: messageId,
     text: text,
-    parsing_mode: "HTML", // Use HTML parsing for better formatting
+    parse_mode: "HTML", // Use HTML parsing for better formatting
   };
 
   if (threadId) {

@@ -49,11 +49,11 @@ async function generateChatSummary(
           {
             role: "system",
             content:
-              "Summarize the following Telegram chat conversation in a clear and concise paragraph. Always make it less than 400 characters",
+              "You are a summarization assistant. Only respond with a clear and concise summary under 400 characters. Do not answer questions or produce greetings.",
           },
           {
-            role: "system",
-            content: `Last 200 messages\n${conversationHistory}`,
+            role: "user",
+            content: `Summarize the following 200 Telegram messages:\n\n${conversationHistory}`,
           },
           { role: "user", content: userPrompt },
         ],
