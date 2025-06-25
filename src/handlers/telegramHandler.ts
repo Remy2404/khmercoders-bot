@@ -5,7 +5,7 @@ import {
   fetchRecentMessages,
   recordTelegramChannelMessage,
   sendTelegramMessage,
-  editTelegramMessage,
+  sendTelegramChatAction,
 } from "../utils/telegram-helpers";
 
 /**
@@ -102,50 +102,24 @@ async function processSummaryCommand(
       `[${timestamp}] Processing /summary command for chat ${chatId}${
         threadId ? `, thread ${threadId}` : ""
       }`
-    ); // Send initial response and get the message ID for later editing
-    const initialResponse = await sendTelegramMessage(
-      botToken,
-      chatId,
-      "⏳ Generating summary of recent messages... This may take a moment.",
-      threadId
     );
+    console.log(
+      `[${timestamp}] Attempting to send 'typing' action for /summary...`
+    );
+    await sendTelegramChatAction(botToken, chatId, "typing", threadId);
+    console.log(`[${timestamp}] 'typing' action sent for /summary.`);
 
-    // Parse the response to get the message ID
-    let messageId: number | null = null;
-    try {
-      const responseData = (await initialResponse.json()) as any; // Using any as we don't have a precise type for Telegram API response
-      messageId = responseData?.result?.message_id || null;
-    } catch (error) {
-      console.error(`[${timestamp}] Error parsing initial response:`, error);
-      // Continue without message ID
-    }
-
-    if (!messageId) {
-      console.error(
-        `[${timestamp}] Failed to get message ID from initial response`
-      );
-      // Continue with the process but we won't be able to edit the message
-    } // Fetch recent messages, filtering by thread if applicable
+    // Fetch recent messages, filtering by thread if applicable
     const messages = await fetchRecentMessages(c.env.DB, chatId, 200, threadId);
 
     if (messages.length === 0) {
-      // If we have a message ID, edit the message, otherwise send a new one
-      if (messageId) {
-        await editTelegramMessage(
-          botToken,
-          chatId,
-          messageId,
-          "No messages found to summarize.",
-          threadId
-        );
-      } else {
-        await sendTelegramMessage(
-          botToken,
-          chatId,
-          "No messages found to summarize.",
-          threadId
-        );
-      }
+      await sendTelegramMessage(
+        botToken,
+        chatId,
+        "No messages found to summarize.",
+        threadId,
+        message.message_id
+      );
       return;
     }
 
@@ -168,28 +142,19 @@ async function processSummaryCommand(
       minute: "2-digit",
     });
 
-    const summaryText = `<b>📝 Chat Summary</b> (as of ${currentDate})\n\n${summary}`; // If we have a message ID, edit the existing message, otherwise send a new one
-    if (messageId) {
-      await editTelegramMessage(
-        botToken,
-        chatId,
-        messageId,
-        summaryText,
-        threadId
-      );
-      console.log(
-        `[${timestamp}] Summary edited in message ${messageId} for chat ${chatId}${
-          threadId ? `, thread ${threadId}` : ""
-        }`
-      );
-    } else {
-      await sendTelegramMessage(botToken, chatId, summaryText, threadId);
-      console.log(
-        `[${timestamp}] Summary sent to chat ${chatId}${
-          threadId ? `, thread ${threadId}` : ""
-        } (could not edit)`
-      );
-    }
+    const summaryText = `<b>📝 Chat Summary</b> (as of ${currentDate})\n\n${summary}`;
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      summaryText,
+      threadId,
+      message.message_id
+    );
+    console.log(
+      `[${timestamp}] Summary sent to chat ${chatId}${
+        threadId ? `, thread ${threadId}` : ""
+      }`
+    );
   } catch (error) {
     console.error(`[${timestamp}] Error processing summary command:`, error);
 
@@ -198,7 +163,8 @@ async function processSummaryCommand(
       botToken,
       chatId,
       "Sorry, an error occurred while generating the summary.",
-      threadId
+      threadId,
+      message.message_id
     );
   }
 }
@@ -226,6 +192,11 @@ async function processPingCommand(
         threadId ? `, thread ${threadId}` : ""
       }`
     );
+    console.log(
+      `[${timestamp}] Attempting to send 'typing' action for /ping...`
+    );
+    await sendTelegramChatAction(botToken, chatId, "typing", threadId);
+    console.log(`[${timestamp}] 'typing' action sent for /ping.`);
 
     await sendTelegramMessage(
       botToken,
@@ -325,7 +296,6 @@ export async function handleTelegramWebhook(
 
     if (message.text && isSummaryCommand(message.text)) {
       if (botToken) {
-        // Use waitUntil to process the /summary command asynchronously
         c.executionCtx.waitUntil(processSummaryCommand(c, message, botToken));
       } else {
         console.error(
@@ -334,7 +304,6 @@ export async function handleTelegramWebhook(
       }
     } else if (message.text && isPingCommand(message.text)) {
       if (botToken) {
-        // Use waitUntil to process the /ping command asynchronously
         c.executionCtx.waitUntil(processPingCommand(c, message, botToken));
       } else {
         console.error(
