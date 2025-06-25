@@ -8,6 +8,9 @@ import {
   editTelegramMessage,
 } from "../utils/telegram-helpers";
 
+// Import configuration directly
+import config from "../../config.json";
+
 /**
  * Generate a summary of chat messages using Cloudflare AI
  *
@@ -260,8 +263,17 @@ export async function handleTelegramWebhook(
       return c.json({ success: true, message: "Ignoring service message" });
     }
 
-    // Get bot token from Cloudflare Secret Store
-    const botToken = await c.env.TELEGRAM_BOT_TOKEN.get();
+    // Get bot token based on environment
+    let botToken: string | null = null;
+
+    if (config.ENVIRONMENT === "dev") {
+      // Use token from config.json in development
+      botToken = config.TELEGRAM_BOT_TOKEN_DEV || null;
+      console.log(`[${timestamp}] Using development bot token`);
+    } else {
+      // Use Cloudflare Secret Store in production
+      botToken = await c.env.TELEGRAM_BOT_TOKEN.get();
+    }
 
     if (message.text && isSummaryCommand(message.text)) {
       if (botToken) {
