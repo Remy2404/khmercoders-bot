@@ -96,6 +96,10 @@ npm run test:webhook
 
 This will send a test message to your local webhook endpoint.
 
+## Cloudflare AI Gateway Setup
+
+This bot utilizes a Cloudflare AI Gateway named `khmercoders-bot-summary-gw` for specific AI functionalities. You will need to create this gateway in your Cloudflare account to ensure the bot operates correctly.
+
 ## Contribution Guidelines
 
 We welcome contributions from the community! Please follow these steps:
