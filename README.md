@@ -26,14 +26,11 @@ Before running the bot, ensure you have Node.js and npm installed.
 
 For local development, you need to create a `config.json` file in the root directory of the project. This file is crucial for storing sensitive information like your Telegram bot token.
 
-**Create `config.json`**:
-In the root directory, create a file named `config.json` with the following structure:
+**Create `.dev.vars`**:
+In the root directory, create a file named `.dev.vars` with the following structure:
 
-```json
-{
-  "ENVIRONMENT": "dev",
-  "TELEGRAM_BOT_TOKEN_DEV": "YOUR_TELEGRAM_BOT_TOKEN_HERE"
-}
+```
+TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN_HERE"
 ```
 
 **Important**: Replace `YOUR_TELEGRAM_BOT_TOKEN_HERE` with the actual token you receive from BotFather (see "Telegram Bot Setup" below). This file is ignored by Git, so your token will not be committed to the repository.
