@@ -2,38 +2,58 @@
 
 ## Introduction
 
-This is a Khmer Coders bot for Telegram and Discord platforms. At the moment, it's primarily used for counting the number of messages sent by each member in a group and creating leaderboards.
+This is a bot designed for the Khmer Coders community, supporting both Telegram and Discord platforms. Its primary function is to track message counts for members within a group and generate leaderboards.
 
-## How to Run
+## Getting Started
+
+### Prerequisites
+
+Before running the bot, ensure you have Node.js and npm installed.
 
 ### Setup
 
-1. Clone the repository
-2. Install dependencies:
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/KhmerCoders/khmercoders-bot.git
+    cd khmercoders-bot
+    ```
+2.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+
+### Configuration
+
+For local development, you need to create a `config.json` file in the root directory of the project. This file is crucial for storing sensitive information like your Telegram bot token.
+
+**Create `.dev.vars`**:
+In the root directory, create a file named `.dev.vars` with the following structure:
 
 ```
-npm install
+TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN_HERE"
 ```
+
+**Important**: Replace `YOUR_TELEGRAM_BOT_TOKEN_HERE` with the actual token you receive from BotFather (see "Telegram Bot Setup" below). This file is ignored by Git, so your token will not be committed to the repository.
 
 ### Running the Service
 
-To run the service locally:
+To start the bot locally:
 
-```
+```bash
 npm run dev
 ```
 
-This will start the Cloudflare worker on your local machine at http://localhost:8787.
+This command starts the Cloudflare worker on your local machine, accessible at `http://localhost:8787`.
 
-### Database Migrations
+### Database Management
 
-This project uses Cloudflare D1 for database storage. The database schema is defined in the migrations directory.
+This project utilizes Cloudflare D1 for database storage, with the schema defined within the `migrations` directory.
 
 #### Development Migrations
 
 To apply migrations to your local development database:
 
-```
+```bash
 npm run migrate:dev
 ```
 
@@ -41,52 +61,56 @@ npm run migrate:dev
 
 To apply migrations to the production database:
 
-```
+```bash
 npm run migrate:prod
 ```
 
 ### Telegram Bot Setup
 
-1. Create a bot by messaging [@BotFather](https://t.me/BotFather) on Telegram
-2. Use the /newbot command to create a new bot
-3. Follow the instructions to choose a name and username for your bot
-4. BotFather will provide you with a bot token - save this for later
+To integrate with Telegram:
+
+1.  **Create Your Bot**: Message [@BotFather](https://t.me/BotFather) on Telegram.
+2.  **Use `/newbot`**: Follow the prompts to create a new bot, choosing a name and username.
+3.  **Save Bot Token**: BotFather will provide you with a unique bot token. **Save this token**, as it's required for the `config.json` file.
 
 #### Configuring the Webhook
 
-Telegram needs to know where to send updates. After deploying your worker, set the webhook URL:
+After deploying your Cloudflare Worker, you must inform Telegram where to send updates. Set the webhook URL using the following command:
 
-```
+```bash
 https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://your-worker-url.workers.dev/telegram/webhook
 ```
 
-Replace <YOUR_BOT_TOKEN> with your actual bot token and the URL with your deployed Worker URL.
+**Remember to replace**:
+
+- `<YOUR_BOT_TOKEN>` with your actual Telegram bot token.
+- `https://your-worker-url.workers.dev/telegram/webhook` with the URL of your deployed Cloudflare Worker.
 
 ### Testing Webhook Locally
 
-To test the webhook with a sample Telegram message:
+To test the webhook functionality with a sample Telegram message against your local development server:
 
-```
+```bash
 npm run test:webhook
 ```
 
-This will send a test message to your webhook endpoint on your local development server.
+This will send a test message to your local webhook endpoint.
 
-## Contribution
+## Contribution Guidelines
 
-We are happy to accept contributions from the community! Here's how you can help:
+We welcome contributions from the community! Please follow these steps:
 
-1. Fork the repository
-2. Create a new branch for your feature
-3. Make your changes
-4. Write or update tests if necessary
-5. Submit a pull request
+1.  **Fork the Repository**: Create your own copy of the repository.
+2.  **Create a New Branch**: Branch off from `main` or `master` for your new feature or bug fix.
+3.  **Implement Your Changes**: Write your code, ensuring it adheres to the existing project standards.
+4.  **Write/Update Tests**: Add or update tests to cover your changes.
+5.  **Submit a Pull Request**: Create a pull request to merge your changes back into the main repository.
 
-### Development Guidelines
+### Development Standards
 
-- Follow the existing code style and patterns
-- Add comments for complex logic
-- Keep the codebase clean and maintainable
-- Write meaningful commit messages
+- **Code Style**: Adhere to the established code style and patterns within the project.
+- **Documentation**: Add comments for complex logic to improve readability.
+- **Maintainability**: Strive for clean, well-structured, and maintainable code.
+- **Commit Messages**: Write clear and descriptive commit messages.
 
 If you have any questions or suggestions, feel free to open an issue or reach out to the community!

@@ -24,12 +24,5 @@
   ],
   "ai": {
     "binding": "AI"
-  },
-  "secrets_store_secrets": [
-    {
-      "binding": "TELEGRAM_BOT_TOKEN",
-      "store_id": "06617dc713554484991765fae9fd6d9b",
-      "secret_name": "khmercoders-telegram-bottoken"
-    }
-  ]
+  }
 }

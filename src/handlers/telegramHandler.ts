@@ -204,6 +204,55 @@ async function processSummaryCommand(
 }
 
 /**
+ * Process the /ping command
+ *
+ * @param c - Hono context
+ * @param message - Telegram message
+ * @param botToken - Telegram bot token
+ */
+async function processPingCommand(
+  c: Context<{ Bindings: CloudflareBindings }>,
+  message: TelegramMessage,
+  botToken: string
+): Promise<void> {
+  const chatId = message.chat.id.toString();
+  const timestamp = new Date().toISOString();
+  const threadId = message.message_thread_id?.toString();
+  const messageId = message.message_id;
+
+  try {
+    console.log(
+      `[${timestamp}] Processing /ping command for chat ${chatId}${
+        threadId ? `, thread ${threadId}` : ""
+      }`
+    );
+
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      "pong",
+      threadId,
+      messageId // Pass the message ID for reply
+    );
+
+    console.log(
+      `[${timestamp}] Sent pong reply to message ${messageId} in chat ${chatId}${
+        threadId ? `, thread ${threadId}` : ""
+      }`
+    );
+  } catch (error) {
+    console.error(`[${timestamp}] Error processing ping command:`, error);
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      "Sorry, an error occurred while processing your ping.",
+      threadId,
+      messageId
+    );
+  }
+}
+
+/**
  * Check if the message is a /summary command
  *
  * @param text - Message text
@@ -212,6 +261,17 @@ async function processSummaryCommand(
 function isSummaryCommand(text?: string): boolean {
   if (!text) return false;
   return text.startsWith("/summary");
+}
+
+/**
+ * Check if the message is a /ping command
+ *
+ * @param text - Message text
+ * @returns boolean
+ */
+function isPingCommand(text?: string): boolean {
+  if (!text) return false;
+  return text.startsWith("/ping");
 }
 
 /**
@@ -260,15 +320,22 @@ export async function handleTelegramWebhook(
       return c.json({ success: true, message: "Ignoring service message" });
     }
 
-    // Get bot token from Cloudflare Secret Store
-    const botToken = await c.env.TELEGRAM_BOT_TOKEN.get();
+    // Use wrangler environment variables (.dev.vars)
+    const botToken = c.env.TELEGRAM_BOT_TOKEN;
 
     if (message.text && isSummaryCommand(message.text)) {
       if (botToken) {
-        // Use waitUntil to process the command asynchronously
-        c.executionCtx.waitUntil(
-          processSummaryCommand(c, message, botToken.toString())
+        // Use waitUntil to process the /summary command asynchronously
+        c.executionCtx.waitUntil(processSummaryCommand(c, message, botToken));
+      } else {
+        console.error(
+          `[${timestamp}] Bot token not found in environment variables`
         );
+      }
+    } else if (message.text && isPingCommand(message.text)) {
+      if (botToken) {
+        // Use waitUntil to process the /ping command asynchronously
+        c.executionCtx.waitUntil(processPingCommand(c, message, botToken));
       } else {
         console.error(
           `[${timestamp}] Bot token not found in environment variables`

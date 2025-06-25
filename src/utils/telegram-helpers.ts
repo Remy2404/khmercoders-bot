@@ -122,7 +122,8 @@ export async function sendTelegramMessage(
   botToken: string,
   chatId: string | number,
   text: string,
-  threadId?: string | number
+  threadId?: string | number,
+  replyToMessageId?: number
 ): Promise<Response> {
   const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
@@ -131,6 +132,7 @@ export async function sendTelegramMessage(
     text: string;
     message_thread_id?: string | number;
     parse_mode: "HTML";
+    reply_to_message_id?: number;
   } = {
     chat_id: chatId,
     text: text,
@@ -139,6 +141,10 @@ export async function sendTelegramMessage(
 
   if (threadId) {
     payload.message_thread_id = threadId;
+  }
+
+  if (replyToMessageId) {
+    payload.reply_to_message_id = replyToMessageId;
   }
 
   return fetch(apiUrl, {
