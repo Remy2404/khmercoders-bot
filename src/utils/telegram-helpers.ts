@@ -254,3 +254,48 @@ export async function editTelegramMessage(
     body: JSON.stringify(payload),
   });
 }
+
+/**
+ * Send a chat action (e.g., "typing") to a Telegram chat
+ *
+ * @param botToken - The Telegram bot token
+ * @param chatId - The chat ID to send the action to
+ * @param action - The type of action to send (e.g., "typing", "upload_photo")
+ * @param threadId - Optional message thread ID for forum topics
+ * @returns Promise<Response>
+ */
+export async function sendTelegramChatAction(
+  botToken: string,
+  chatId: string | number,
+  action: string,
+  threadId?: string | number
+): Promise<Response> {
+  const apiUrl = `https://api.telegram.org/bot${botToken}/sendChatAction`;
+
+  const payload: {
+    chat_id: string | number;
+    action: string;
+    message_thread_id?: string | number;
+  } = {
+    chat_id: chatId,
+    action: action,
+  };
+
+  if (threadId) {
+    payload.message_thread_id = threadId;
+  }
+
+  const response = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const responseText = await response.text();
+  console.log(
+    `[sendTelegramChatAction] API Response: ${response.status} - ${responseText}`
+  );
+  return response;
+}
