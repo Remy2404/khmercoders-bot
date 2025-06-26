@@ -12,19 +12,20 @@ Before running the bot, ensure you have Node.js and npm installed.
 
 ### Setup
 
-1.  **Clone the Repository**:
-    ```bash
-    git clone https://github.com/KhmerCoders/khmercoders-bot.git
-    cd khmercoders-bot
-    ```
-2.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
+1. **Clone the Repository**:
+
+   ```bash
+   git clone https://github.com/KhmerCoders/khmercoders-bot.git
+   cd khmercoders-bot
+   ```
+
+2. **Install Dependencies**:
+
+   ```bash
+   npm install
+   ```
 
 ### Configuration
-
-For local development, you need to create a `config.json` file in the root directory of the project. This file is crucial for storing sensitive information like your Telegram bot token.
 
 **Create `.dev.vars`**:
 In the root directory, create a file named `.dev.vars` with the following structure:
@@ -69,9 +70,9 @@ npm run migrate:prod
 
 To integrate with Telegram:
 
-1.  **Create Your Bot**: Message [@BotFather](https://t.me/BotFather) on Telegram.
-2.  **Use `/newbot`**: Follow the prompts to create a new bot, choosing a name and username.
-3.  **Save Bot Token**: BotFather will provide you with a unique bot token. **Save this token**, as it's required for the `config.json` file.
+1. **Create Your Bot**: Message [@BotFather](https://t.me/BotFather) on Telegram.
+2. **Use `/newbot`**: Follow the prompts to create a new bot, choosing a name and username.
+3. **Save Bot Token**: BotFather will provide you with a unique bot token. **Save this token**, as it's required for the `config.json` file.
 
 #### Configuring the Webhook
 
@@ -104,11 +105,11 @@ This bot utilizes a Cloudflare AI Gateway named `khmercoders-bot-summary-gw` for
 
 We welcome contributions from the community! Please follow these steps:
 
-1.  **Fork the Repository**: Create your own copy of the repository.
-2.  **Create a New Branch**: Branch off from `main` or `master` for your new feature or bug fix.
-3.  **Implement Your Changes**: Write your code, ensuring it adheres to the existing project standards.
-4.  **Write/Update Tests**: Add or update tests to cover your changes.
-5.  **Submit a Pull Request**: Create a pull request to merge your changes back into the main repository.
+1. **Fork the Repository**: Create your own copy of the repository.
+2. **Create a New Branch**: Branch off from `main` or `master` for your new feature or bug fix.
+3. **Implement Your Changes**: Write your code, ensuring it adheres to the existing project standards.
+4. **Write/Update Tests**: Add or update tests to cover your changes.
+5. **Submit a Pull Request**: Create a pull request to merge your changes back into the main repository.
 
 ### Development Standards
 
