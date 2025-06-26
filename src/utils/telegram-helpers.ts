@@ -211,51 +211,6 @@ export async function fetchRecentMessages(
 }
 
 /**
- * Edit an existing message in a Telegram chat
- *
- * @param botToken - The Telegram bot token
- * @param chatId - The chat ID where the message is
- * @param messageId - The ID of the message to edit
- * @param text - The new text for the message
- * @param threadId - Optional message thread ID for forum topics
- * @returns Promise<Response>
- */
-export async function editTelegramMessage(
-  botToken: string,
-  chatId: string | number,
-  messageId: number,
-  text: string,
-  threadId?: string | number
-): Promise<Response> {
-  const apiUrl = `https://api.telegram.org/bot${botToken}/editMessageText`;
-
-  const payload: {
-    chat_id: string | number;
-    message_id: number;
-    text: string;
-    message_thread_id?: string | number;
-    parse_mode?: string;
-  } = {
-    chat_id: chatId,
-    message_id: messageId,
-    text: text,
-    parse_mode: "HTML", // Use HTML parsing for better formatting
-  };
-
-  if (threadId) {
-    payload.message_thread_id = threadId;
-  }
-
-  return fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-}
-
-/**
  * Send a chat action (e.g., "typing") to a Telegram chat
  *
  * @param botToken - The Telegram bot token
