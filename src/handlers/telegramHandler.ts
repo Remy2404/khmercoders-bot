@@ -274,6 +274,79 @@ function isPingCommand(text?: string): boolean {
 }
 
 /**
+ * Check if the message is a /help command
+ *
+ * @param text - Message text
+ * @returns boolean
+ */
+function isHelpCommand(text?: string): boolean {
+  if (!text) return false;
+  return text.startsWith("/help");
+}
+
+/**
+ * Process the /help command
+ *
+ * @param c - Hono context
+ * @param message - Telegram message
+ * @param botToken - Telegram bot token
+ */
+async function processHelpCommand(
+  c: Context<{ Bindings: CloudflareBindings }>,
+  message: TelegramMessage,
+  botToken: string
+): Promise<void> {
+  const chatId = message.chat.id.toString();
+  const timestamp = new Date().toISOString();
+  const threadId = message.message_thread_id?.toString();
+  const messageId = message.message_id;
+
+  try {
+    console.log(
+      `[${timestamp}] Processing /help command for chat ${chatId}${
+        threadId ? `, thread ${threadId}` : ""
+      }`
+    );
+    console.log(
+      `[${timestamp}] Attempting to send 'typing' action for /help...`
+    );
+    await sendTelegramChatAction(botToken, chatId, "typing", threadId);
+    console.log(`[${timestamp}] 'typing' action sent for /help.`);
+
+    const helpMessage = `
+    <b>🤖 Available Commands:</b>
+
+o /help - Displays this help message.
+o /summary - Summarizes recent chat messages.
+o /ping - Checks if the bot is online.
+    `;
+
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      helpMessage,
+      threadId,
+      messageId
+    );
+
+    console.log(
+      `[${timestamp}] Sent help message to chat ${chatId}${
+        threadId ? `, thread ${threadId}` : ""
+      }`
+    );
+  } catch (error) {
+    console.error(`[${timestamp}] Error processing help command:`, error);
+    await sendTelegramMessage(
+      botToken,
+      chatId,
+      "Sorry, an error occurred while processing your help request.",
+      threadId,
+      messageId
+    );
+  }
+}
+
+/**
  * Handle incoming telegram webhook requests
  * @param c - Hono context
  * @returns HTTP response
@@ -333,6 +406,14 @@ export async function handleTelegramWebhook(
     } else if (message.text && isPingCommand(message.text)) {
       if (botToken) {
         c.executionCtx.waitUntil(processPingCommand(c, message, botToken));
+      } else {
+        console.error(
+          `[${timestamp}] Bot token not found in environment variables`
+        );
+      }
+    } else if (message.text && isHelpCommand(message.text)) {
+      if (botToken) {
+        c.executionCtx.waitUntil(processHelpCommand(c, message, botToken));
       } else {
         console.error(
           `[${timestamp}] Bot token not found in environment variables`
