@@ -147,13 +147,21 @@ export async function sendTelegramMessage(
     payload.reply_to_message_id = replyToMessageId;
   }
 
-  return fetch(apiUrl, {
+  const response = await fetch(apiUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
   });
+
+  // Log the response for debugging telegram parser breakage
+  // const responseText = await response.text();
+  // console.log(
+  //   `[sendTelegramMessage] API Response: ${response.status} - ${responseText}`
+  // );
+
+  return response;
 }
 
 /**
