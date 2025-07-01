@@ -1,6 +1,6 @@
 import { Context } from "hono";
 import { TelegramMessage, TelegramUpdate } from "../types/telegram";
-import { trackMessage } from "../utils/db-helpers";
+import { getBlacklistedMessageThreadIds, trackMessage } from "../utils/db-helpers";
 import { recordTelegramChannelMessage } from "../utils/telegram-helpers";
 import { commands } from "../commands";
 
@@ -78,6 +78,20 @@ export async function handleTelegramWebhook(
       return c.json({ success: true, message: "Ignored bot message" });
     }
 
+    // Check if the message is in a blacklisted topic
+    if (message.message_thread_id) {
+      const blacklistedIds = await getBlacklistedMessageThreadIds(c.env.DB);
+      if (blacklistedIds.includes(message.message_thread_id.toString())) {
+        console.log(
+          `[${timestamp}] Ignoring message in blacklisted topic: ${message.message_thread_id}`,
+        );
+        return c.json({
+          success: true,
+          message: "Ignoring message in blacklisted topic",
+        });
+      }
+    }
+
     // Handle channel posts or supergroup messages
     if (message) {
       await recordTelegramChannelMessage(c.env.DB, message);
@@ -115,4 +129,3 @@ export async function handleTelegramWebhook(
     return c.json({ success: false, error: "Internal server error" }, 500);
   }
 }
-

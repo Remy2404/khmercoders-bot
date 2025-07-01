@@ -59,3 +59,22 @@ export async function trackMessage(
     throw error;
   }
 }
+
+/**
+ * Get the list of blacklisted topics from the database
+ * @param db - D1Database instance
+ * @returns Promise<string[]>
+ */
+export async function getBlacklistedMessageThreadIds(
+  db: D1Database
+): Promise<string[]> {
+  try {
+    const { results } = await db
+      .prepare("SELECT message_thread_id FROM blacklist_topic")
+      .all<{ message_thread_id: string }>();
+    return results.map((row) => row.message_thread_id);
+  } catch (error) {
+    console.error("Error fetching blacklisted topics:", error);
+    return [];
+  }
+}
