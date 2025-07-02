@@ -104,7 +104,7 @@ export async function handleTelegramWebhook(
     );
 
     console.log(
-      `[${timestamp}] Successfully count message from user: ${displayName}`
+      `[${timestamp}] Successfully counted message from user: ${displayName}`
     );
 
     // Check if the message is in a blacklisted topic
