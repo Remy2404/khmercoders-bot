@@ -35,7 +35,7 @@ export async function countUserMessage(
       .bind(platform, userId, displayName)
       .run();
 
-    console.log(`[${timestamp}] User ${displayName} existance confirmed in db`);
+    console.log(`[${timestamp}] User ${displayName} existence confirmed in db`);
 
     // Then update the message count and total message length
     await db
