@@ -1,24 +1,9 @@
 import { Hono } from "hono";
 import { DiscordWebhookPayload } from "./types/discord";
 import { handleTelegramWebhook } from "./handlers/telegramHandler";
-import { trackMessage } from "./utils/db-helpers";
-import { BLACKLISTED_THREAD_IDS } from "./utils/blacklist";
+import { countUserMessage } from "./utils/db-helpers";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
-
-// INSERT OR IGNORE any blacklisted thread IDs into the database
-app.use("*", async (c, next) => {
-  if (BLACKLISTED_THREAD_IDS.length > 0) {
-    const statement =
-      "INSERT OR IGNORE INTO blacklist_topic (message_thread_id) VALUES (?)";
-    const prepared = c.env.DB.prepare(statement);
-    const promises = BLACKLISTED_THREAD_IDS.map((id) =>
-      prepared.bind(id).run()
-    );
-    await Promise.all(promises);
-  }
-  await next();
-});
 
 app.get("/", (c) => {
   return c.text("Welcome to KhmerCoders Chatbot");
@@ -57,7 +42,13 @@ app.post("/discord/webhook", async (c) => {
     );
 
     // Track the message in our database
-    await trackMessage(c.env.DB, "discord", userId, displayName, text.length);
+    await countUserMessage(
+      c.env.DB,
+      "discord",
+      userId,
+      displayName,
+      text.length
+    );
 
     console.log(
       `[${timestamp}] Successfully tracked message from Discord user: ${displayName}`

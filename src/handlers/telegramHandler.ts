@@ -1,6 +1,9 @@
 import { Context } from "hono";
-import { TelegramMessage, TelegramUpdate } from "../types/telegram";
-import { getBlacklistedMessageThreadIds, trackMessage } from "../utils/db-helpers";
+import { TelegramUpdate } from "../types/telegram";
+import {
+  isTelegramThreadIdInBlacklist,
+  countUserMessage,
+} from "../utils/db-helpers";
 import { recordTelegramChannelMessage } from "../utils/telegram-helpers";
 import { commands } from "../commands";
 
@@ -10,7 +13,7 @@ import { commands } from "../commands";
  * @returns HTTP response
  */
 export async function handleTelegramWebhook(
-  c: Context<{ Bindings: CloudflareBindings }>,
+  c: Context<{ Bindings: CloudflareBindings }>
 ): Promise<Response> {
   try {
     const timestamp = new Date().toISOString();
@@ -24,7 +27,7 @@ export async function handleTelegramWebhook(
     // Early return if no new message found (we only want to count new messages)
     if (!update.message) {
       console.log(
-        `[${timestamp}] No new message found in the update or it's an edited message`,
+        `[${timestamp}] No new message found in the update or it's an edited message`
       );
       return c.json({ success: true, message: "Ignoring non-new messages" });
     }
@@ -73,28 +76,9 @@ export async function handleTelegramWebhook(
       console.log(
         `[${timestamp}] Ignored message from bot: ${
           message.from.username || message.from.first_name
-        }`,
+        }`
       );
       return c.json({ success: true, message: "Ignored bot message" });
-    }
-
-    // Check if the message is in a blacklisted topic
-    if (message.message_thread_id) {
-      const blacklistedIds = await getBlacklistedMessageThreadIds(c.env.DB);
-      if (blacklistedIds.includes(message.message_thread_id.toString())) {
-        console.log(
-          `[${timestamp}] Ignoring message in blacklisted topic: ${message.message_thread_id}`,
-        );
-        return c.json({
-          success: true,
-          message: "Ignoring message in blacklisted topic",
-        });
-      }
-    }
-
-    // Handle channel posts or supergroup messages
-    if (message) {
-      await recordTelegramChannelMessage(c.env.DB, message);
     }
 
     // Format display name (prioritize first+last name over username)
@@ -107,21 +91,44 @@ export async function handleTelegramWebhook(
     const text = message.text || "";
 
     console.log(
-      `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`,
+      `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`
     );
 
     // Track the message in our database
-    await trackMessage(
+    await countUserMessage(
       c.env.DB,
       "telegram",
       message.from.id.toString(),
       displayName,
-      text.length,
+      text.length
     );
 
     console.log(
-      `[${timestamp}] Successfully tracked message from user: ${displayName}`,
+      `[${timestamp}] Successfully count message from user: ${displayName}`
     );
+
+    // Check if the message is in a blacklisted topic
+    if (message.message_thread_id) {
+      const isBlacklisted = await isTelegramThreadIdInBlacklist(
+        c.env.DB,
+        message.message_thread_id.toString()
+      );
+      if (isBlacklisted) {
+        console.log(
+          `[${timestamp}] Ignoring message in blacklisted topic: ${message.message_thread_id}`
+        );
+        return c.json({
+          success: true,
+          message: "Ignoring message in blacklisted topic",
+        });
+      }
+    }
+
+    // if isBlacklisted = false, record messages into DB
+    if (message) {
+      await recordTelegramChannelMessage(c.env.DB, message);
+    }
+
     return c.json({ success: true });
   } catch (error) {
     const timestamp = new Date().toISOString();
