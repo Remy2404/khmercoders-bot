@@ -10,7 +10,7 @@
  * @param messageLength - Length of the message content
  * @returns Promise<void>
  */
-export async function trackMessage(
+export async function countUserMessage(
   db: D1Database,
   platform: string,
   userId: string,
@@ -23,7 +23,7 @@ export async function trackMessage(
     const today = timestamp.split("T")[0];
 
     console.log(
-      `[${timestamp}] Tracking message for user ${displayName} (${userId}) on ${platform}, length: ${messageLength}`
+      `[${timestamp}] Counting message for user ${displayName} (${userId}) on ${platform}, length: ${messageLength}`
     );
 
     // First ensure the user exists in the users table
@@ -35,7 +35,7 @@ export async function trackMessage(
       .bind(platform, userId, displayName)
       .run();
 
-    console.log(`[${timestamp}] User record ensured for ${displayName}`);
+    console.log(`[${timestamp}] User ${displayName} existence confirmed in db`);
 
     // Then update the message count and total message length
     await db
@@ -57,5 +57,29 @@ export async function trackMessage(
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] Error tracking message:`, error);
     throw error;
+  }
+}
+
+/**
+ * Check if a Telegram message thread ID is in the blacklist
+ * @param db - D1Database instance
+ * @param threadId - Telegram message thread ID
+ * @returns Promise<boolean>
+ */
+export async function isTelegramThreadIdInBlacklist(
+  db: D1Database,
+  threadId: string
+): Promise<boolean> {
+  try {
+    const { results } = await db
+      .prepare(
+        "SELECT 1 FROM blacklist_topic WHERE message_thread_id = ? LIMIT 1"
+      )
+      .bind(threadId)
+      .all<{ message_thread_id: string }>();
+    return results.length > 0;
+  } catch (error) {
+    console.error(`Error checking blacklist for thread ID ${threadId}:`, error);
+    return false;
   }
 }

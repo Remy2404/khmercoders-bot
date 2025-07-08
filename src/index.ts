@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { DiscordWebhookPayload } from "./types/discord";
 import { handleTelegramWebhook } from "./handlers/telegramHandler";
-import { trackMessage } from "./utils/db-helpers";
+import { countUserMessage } from "./utils/db-helpers";
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -42,7 +42,13 @@ app.post("/discord/webhook", async (c) => {
     );
 
     // Track the message in our database
-    await trackMessage(c.env.DB, "discord", userId, displayName, text.length);
+    await countUserMessage(
+      c.env.DB,
+      "discord",
+      userId,
+      displayName,
+      text.length
+    );
 
     console.log(
       `[${timestamp}] Successfully tracked message from Discord user: ${displayName}`
