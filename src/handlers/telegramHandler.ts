@@ -7,7 +7,38 @@ import {
   sendTelegramMessage,
   sendTelegramChatAction,
 } from "../utils/telegram-helpers";
+/**
+ * Convert common Markdown formatting to HTML for Telegram
+ * The reason : sometime AI will send markdown formatting and we need to convert it to HTML to allow it to be displayed correctly.
+ *
+ * @param text - Text with potential Markdown formatting
+ * @returns Text with HTML formatting
+ */
+function convertMarkdownToHTML(text: string): string {
+  try {
+    // Convert **bold** and __bold__ to <b>bold</b>
+    text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
+    text = text.replace(/__(.*?)__/g, "<b>$1</b>");
 
+    // Convert *italic* and _italic_ to <i>italic</i>
+    text = text.replace(/\*(.*?)\*/g, "<i>$1</i>");
+    text = text.replace(/_(.*?)_/g, "<i>$1</i>");
+
+    // Convert `code` to <code>code</code>
+    text = text.replace(/`(.*?)`/g, "<code>$1</code>");
+
+    // Convert ```code blocks``` to <pre>code</pre>
+    text = text.replace(/```([\s\S]*?)```/g, "<pre>$1</pre>");
+
+    // Convert ~~strikethrough~~ to <s>strikethrough</s>
+    text = text.replace(/~~(.*?)~~/g, "<s>$1</s>");
+
+    return text;
+  } catch (error) {
+    console.error("Error converting Markdown to HTML:", error);
+    return text;
+  }
+}
 /**
  * Generate a summary of chat messages using Cloudflare AI
  *
@@ -98,14 +129,27 @@ async function generateChatSummary(
       console.warn(
         "Received ReadableStream response which cannot be processed"
       );
-      return "Sorry, I couldn't generate a summary at this time.";
+      const fallbackMessage =
+        "Sorry, I couldn't generate a summary at this time.";
+      return convertMarkdownToHTML(fallbackMessage);
     }
 
-    // Return the response if available
-    return response?.response || "No summary generated";
+    // Return the response if available with proper HTML formatting
+    const rawResponse = response?.response || "No summary generated";
+    console.log("Raw AI response:", rawResponse);
+
+    // Convert Markdown to HTML first, then sanitize for Telegram
+    const markdownConverted = convertMarkdownToHTML(rawResponse);
+    console.log("Markdown converted response:", markdownConverted);
+
+    return markdownConverted;
   } catch (error) {
     console.error(`Error generating summary:`, error);
-    return "Sorry, I couldn't generate a summary at this time.";
+
+    // Provide a fallback summary when AI fails
+    const fallbackSummary =
+      "Sorry, I couldn't generate a summary at this time.";
+    return convertMarkdownToHTML(fallbackSummary);
   }
 }
 
