@@ -13,7 +13,7 @@ import { commands } from "../commands";
  * @returns HTTP response
  */
 export async function handleTelegramWebhook(
-  c: Context<{ Bindings: CloudflareBindings }>
+  c: Context<{ Bindings: CloudflareBindings }>,
 ): Promise<Response> {
   try {
     const timestamp = new Date().toISOString();
@@ -27,13 +27,24 @@ export async function handleTelegramWebhook(
     // Early return if no new message found (we only want to count new messages)
     if (!update.message) {
       console.log(
-        `[${timestamp}] No new message found in the update or it's an edited message`
+        `[${timestamp}] No new message found in the update or it's an edited message`,
       );
       return c.json({ success: true, message: "Ignoring non-new messages" });
     }
 
     // Only use regular new messages
     const message = update.message;
+
+    // Only count/process messages from supergroups (avoid DMs)
+    if (message.chat.type !== "supergroup") {
+      console.log(
+        `[${timestamp}] Ignoring message from non-supergroup chat: ${message.chat.type}`,
+      );
+      return c.json({
+        success: true,
+        message: "Ignoring non-supergroup message",
+      });
+    }
 
     // Don't count service messages (join/leave, group title changes, etc.)
     if (
@@ -76,7 +87,7 @@ export async function handleTelegramWebhook(
       console.log(
         `[${timestamp}] Ignored message from bot: ${
           message.from.username || message.from.first_name
-        }`
+        }`,
       );
       return c.json({ success: true, message: "Ignored bot message" });
     }
@@ -91,7 +102,7 @@ export async function handleTelegramWebhook(
     const text = message.text || "";
 
     console.log(
-      `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`
+      `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`,
     );
 
     // Track the message in our database
@@ -100,22 +111,22 @@ export async function handleTelegramWebhook(
       "telegram",
       message.from.id.toString(),
       displayName,
-      text.length
+      text.length,
     );
 
     console.log(
-      `[${timestamp}] Successfully counted message from user: ${displayName}`
+      `[${timestamp}] Successfully counted message from user: ${displayName}`,
     );
 
     // Check if the message is in a blacklisted topic
     if (message.message_thread_id) {
       const isBlacklisted = await isTelegramThreadIdInBlacklist(
         c.env.DB,
-        message.message_thread_id.toString()
+        message.message_thread_id.toString(),
       );
       if (isBlacklisted) {
         console.log(
-          `[${timestamp}] Ignoring message in blacklisted topic: ${message.message_thread_id}`
+          `[${timestamp}] Ignoring message in blacklisted topic: ${message.message_thread_id}`,
         );
         return c.json({
           success: true,
