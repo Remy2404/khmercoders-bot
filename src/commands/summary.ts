@@ -1,10 +1,10 @@
-import { Context } from "hono";
-import { TelegramMessage } from "../types/telegram";
+import { Context } from 'hono';
+import { TelegramMessage } from '../types/telegram';
 import {
   fetchRecentMessages,
   sendTelegramMessage,
   sendTelegramChatAction,
-} from "../utils/telegram-helpers";
+} from '../utils/telegram-helpers';
 
 /**
  * Generate a summary of chat messages using Cloudflare AI
@@ -26,23 +26,23 @@ async function generateChatSummary(
     // Build a conversation history to summarize
     const conversationHistory = messages
       .reverse() // Order from oldest to newest
-      .map((msg) => {
+      .map(msg => {
         // Format date for display - convert ISO date to more readable format
         const date = new Date(msg.message_date);
-        const formattedDate = date.toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
+        const formattedDate = date.toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
         });
         return `[${formattedDate}] ${msg.sender_name}: ${msg.message_text}`;
       })
-      .join("\n");
+      .join('\n');
 
     // Prepare the AI messages based on whether there's a custom user prompt
     const aiMessages = [
       {
-        role: "system",
+        role: 'system',
         content: `
         You are Khmercoders assistant. Your main task is to provide brief 50 - 100 words, easy-to-read summaries of chat history.
         
@@ -93,40 +93,38 @@ async function generateChatSummary(
     if (userPrompt && userPrompt.trim().length > 0) {
       // User provided a specific query
       aiMessages.push({
-        role: "user",
+        role: 'user',
         content: `Here are ${messages.length} Telegram messages to summarize:\n\n${conversationHistory}\n\nSpecific request: ${userPrompt}`,
       });
     } else {
       // No specific query, general summary
       aiMessages.push({
-        role: "user",
+        role: 'user',
         content: `Summarize the following ${messages.length} Telegram messages:\n\n${conversationHistory}`,
       });
     }
 
     // Call Cloudflare AI to generate summary
     const response: AiTextGenerationOutput = await ai.run(
-      "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+      '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
       {
         messages: aiMessages,
       },
       {
         gateway: {
-          id: "khmercoders-bot-summary-gw",
+          id: 'khmercoders-bot-summary-gw',
         },
       }
     );
 
     // Check if the response is a ReadableStream (which we can't directly use)
     if (response instanceof ReadableStream) {
-      console.warn(
-        "Received ReadableStream response which cannot be processed"
-      );
+      console.warn('Received ReadableStream response which cannot be processed');
       return "Sorry, I couldn't generate a summary at this time.";
     }
 
     // Return the response if available with proper HTML formatting
-    const rawResponse = response?.response || "No summary generated";
+    const rawResponse = response?.response || 'No summary generated';
     return formatTelegramHTML(rawResponse);
   } catch (error) {
     const fallbackSummary = generateFallbackSummary(messages, userPrompt);
@@ -153,13 +151,11 @@ export async function processSummaryCommand(
   try {
     console.log(
       `[${timestamp}] Processing /summary command for chat ${chatId}${
-        threadId ? `, thread ${threadId}` : ""
+        threadId ? `, thread ${threadId}` : ''
       }`
     );
-    console.log(
-      `[${timestamp}] Attempting to send 'typing' action for /summary...`
-    );
-    await sendTelegramChatAction(botToken, chatId, "typing", threadId);
+    console.log(`[${timestamp}] Attempting to send 'typing' action for /summary...`);
+    await sendTelegramChatAction(botToken, chatId, 'typing', threadId);
     console.log(`[${timestamp}] 'typing' action sent for /summary.`);
 
     // Fetch recent messages, filtering by thread if applicable
@@ -169,7 +165,7 @@ export async function processSummaryCommand(
       await sendTelegramMessage(
         botToken,
         chatId,
-        "No messages found to summarize.",
+        'No messages found to summarize.',
         threadId,
         message.message_id
       );
@@ -178,35 +174,27 @@ export async function processSummaryCommand(
 
     console.log(
       `[${timestamp}] Fetched ${messages.length} messages for summarization${
-        threadId ? ` from thread ${threadId}` : ""
+        threadId ? ` from thread ${threadId}` : ''
       }`
     );
 
     // User prompt
-    const userPrompt = message.text?.replace("/summary", "").trim() || "";
+    const userPrompt = message.text?.replace('/summary', '').trim() || '';
 
     // Generate summary
     const summary = await generateChatSummary(userPrompt, messages, c.env.AI);
-    const currentDate = new Date().toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    const currentDate = new Date().toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
 
     const summaryText = `<b>📝 Chat Summary</b> (as of ${currentDate})\n\n${summary}`;
-    await sendTelegramMessage(
-      botToken,
-      chatId,
-      summaryText,
-      threadId,
-      message.message_id
-    );
+    await sendTelegramMessage(botToken, chatId, summaryText, threadId, message.message_id);
     console.log(
-      `[${timestamp}] Summary sent to chat ${chatId}${
-        threadId ? `, thread ${threadId}` : ""
-      }`
+      `[${timestamp}] Summary sent to chat ${chatId}${threadId ? `, thread ${threadId}` : ''}`
     );
   } catch (error) {
     console.error(`[${timestamp}] Error processing summary command:`, error);
@@ -215,7 +203,7 @@ export async function processSummaryCommand(
     await sendTelegramMessage(
       botToken,
       chatId,
-      "Sorry, an error occurred while generating the summary.",
+      'Sorry, an error occurred while generating the summary.',
       threadId,
       message.message_id
     );
@@ -232,58 +220,55 @@ function formatTelegramHTML(htmlContent: string): string {
   try {
     // Telegram's allowed HTML tags
     const telegramAllowedTags = [
-      "b",
-      "strong",
-      "i",
-      "em",
-      "u",
-      "ins",
-      "s",
-      "strike",
-      "del",
-      "code",
-      "pre",
-      "a",
-      "tg-spoiler",
+      'b',
+      'strong',
+      'i',
+      'em',
+      'u',
+      'ins',
+      's',
+      'strike',
+      'del',
+      'code',
+      'pre',
+      'a',
+      'tg-spoiler',
     ];
 
     // First, escape all HTML entities to prevent XSS
     let sanitized = htmlContent
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#x27;");
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
 
     // Re-allow only Telegram's supported HTML tags
-    telegramAllowedTags.forEach((tag) => {
+    telegramAllowedTags.forEach(tag => {
       // Allow opening tags
-      const openTagRegex = new RegExp(`&lt;${tag}&gt;`, "gi");
+      const openTagRegex = new RegExp(`&lt;${tag}&gt;`, 'gi');
       sanitized = sanitized.replace(openTagRegex, `<${tag}>`);
 
       // Allow closing tags
-      const closeTagRegex = new RegExp(`&lt;\\/${tag}&gt;`, "gi");
+      const closeTagRegex = new RegExp(`&lt;\\/${tag}&gt;`, 'gi');
       sanitized = sanitized.replace(closeTagRegex, `</${tag}>`);
     });
 
     // Handle special case for <a> tags with href attribute
     // Pattern: &lt;a href=&quot;URL&quot;&gt; -> <a href="URL">
-    sanitized = sanitized.replace(
-      /&lt;a\s+href=&quot;([^&"]+)&quot;&gt;/gi,
-      '<a href="$1">'
-    );
+    sanitized = sanitized.replace(/&lt;a\s+href=&quot;([^&"]+)&quot;&gt;/gi, '<a href="$1">');
 
     // Handle closing </a> tags
-    sanitized = sanitized.replace(/&lt;\/a&gt;/gi, "</a>");
+    sanitized = sanitized.replace(/&lt;\/a&gt;/gi, '</a>');
 
     // Validate that tags are properly nested and remove malformed ones
     sanitized = validateAndCleanTelegramHTML(sanitized);
 
     return sanitized;
   } catch (error) {
-    console.error("Error formatting HTML for Telegram:", error);
+    console.error('Error formatting HTML for Telegram:', error);
     // Return plain text fallback on error
-    return htmlContent.replace(/<[^>]*>/g, "");
+    return htmlContent.replace(/<[^>]*>/g, '');
   }
 }
 
@@ -299,38 +284,35 @@ function validateAndCleanTelegramHTML(html: string): string {
     // This is a simple validation - for more complex validation, we'd need a proper HTML parser
 
     // Remove empty tags
-    html = html.replace(
-      /<(b|strong|i|em|u|ins|s|strike|del|code|pre|tg-spoiler)><\/\1>/gi,
-      ""
-    );
+    html = html.replace(/<(b|strong|i|em|u|ins|s|strike|del|code|pre|tg-spoiler)><\/\1>/gi, '');
 
     // Remove nested identical tags (Telegram doesn't support nested formatting of same type)
     const tagsToCheck = [
-      "b",
-      "strong",
-      "i",
-      "em",
-      "u",
-      "ins",
-      "s",
-      "strike",
-      "del",
-      "code",
-      "tg-spoiler",
+      'b',
+      'strong',
+      'i',
+      'em',
+      'u',
+      'ins',
+      's',
+      'strike',
+      'del',
+      'code',
+      'tg-spoiler',
     ];
 
-    tagsToCheck.forEach((tag) => {
+    tagsToCheck.forEach(tag => {
       // Remove nested identical tags: <b><b>text</b></b> -> <b>text</b>
       const nestedRegex = new RegExp(
         `<${tag}>([^<]*)<${tag}>([^<]*)<\\/${tag}>([^<]*)<\\/${tag}>`,
-        "gi"
+        'gi'
       );
       html = html.replace(nestedRegex, `<${tag}>$1$2$3</${tag}>`);
     });
 
     return html;
   } catch (error) {
-    console.error("Error validating Telegram HTML:", error);
+    console.error('Error validating Telegram HTML:', error);
     return html;
   }
 }
@@ -351,35 +333,31 @@ function generateFallbackSummary(
   userPrompt: string
 ): string {
   if (messages.length === 0) {
-    return "<b>📭 No Messages:</b> <i>No messages found to summarize.</i>";
+    return '<b>📭 No Messages:</b> <i>No messages found to summarize.</i>';
   }
 
   // Get unique participants
-  const participants = [...new Set(messages.map((msg) => msg.sender_name))];
+  const participants = [...new Set(messages.map(msg => msg.sender_name))];
 
   // Get date range
-  const dates = messages.map((msg) => new Date(msg.message_date));
-  const earliestDate = new Date(Math.min(...dates.map((d) => d.getTime())));
-  const latestDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+  const dates = messages.map(msg => new Date(msg.message_date));
+  const earliestDate = new Date(Math.min(...dates.map(d => d.getTime())));
+  const latestDate = new Date(Math.max(...dates.map(d => d.getTime())));
 
   const formatDate = (date: Date) =>
-    date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
 
   // Create basic summary
   let summary = `<b>💬 Chat Activity Summary</b>\n\n`;
   summary += `<b>📊 Stats:</b>\n`;
   summary += `• <i>Messages:</i> ${messages.length}\n`;
-  summary += `• <i>Participants:</i> ${
-    participants.length
-  } (${participants.join(", ")})\n`;
-  summary += `• <i>Time Range:</i> ${formatDate(earliestDate)} - ${formatDate(
-    latestDate
-  )}\n\n`;
+  summary += `• <i>Participants:</i> ${participants.length} (${participants.join(', ')})\n`;
+  summary += `• <i>Time Range:</i> ${formatDate(earliestDate)} - ${formatDate(latestDate)}\n\n`;
 
   if (userPrompt && userPrompt.trim().length > 0) {
     summary += `<b>🔍 Query:</b> <i>"${userPrompt}"</i>\n\n`;

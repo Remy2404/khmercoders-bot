@@ -1,9 +1,6 @@
-import { Context } from "hono";
-import { TelegramMessage } from "../types/telegram";
-import {
-  sendTelegramMessage,
-  sendTelegramChatAction,
-} from "../utils/telegram-helpers";
+import { Context } from 'hono';
+import { TelegramMessage } from '../types/telegram';
+import { sendTelegramMessage, sendTelegramChatAction } from '../utils/telegram-helpers';
 
 /**
  * Process the /ping command
@@ -25,26 +22,24 @@ export async function processPingCommand(
   try {
     console.log(
       `[${timestamp}] Processing /ping command for chat ${chatId}${
-        threadId ? `, thread ${threadId}` : ""
+        threadId ? `, thread ${threadId}` : ''
       }`
     );
-    console.log(
-      `[${timestamp}] Attempting to send 'typing' action for /ping...`
-    );
-    await sendTelegramChatAction(botToken, chatId, "typing", threadId);
+    console.log(`[${timestamp}] Attempting to send 'typing' action for /ping...`);
+    await sendTelegramChatAction(botToken, chatId, 'typing', threadId);
     console.log(`[${timestamp}] 'typing' action sent for /ping.`);
 
     await sendTelegramMessage(
       botToken,
       chatId,
-      "pong",
+      'pong',
       threadId,
       messageId // Pass the message ID for reply
     );
 
     console.log(
       `[${timestamp}] Sent pong reply to message ${messageId} in chat ${chatId}${
-        threadId ? `, thread ${threadId}` : ""
+        threadId ? `, thread ${threadId}` : ''
       }`
     );
   } catch (error) {
@@ -52,7 +47,7 @@ export async function processPingCommand(
     await sendTelegramMessage(
       botToken,
       chatId,
-      "Sorry, an error occurred while processing your ping.",
+      'Sorry, an error occurred while processing your ping.',
       threadId,
       messageId
     );

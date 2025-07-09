@@ -20,7 +20,7 @@ export async function countUserMessage(
   try {
     const timestamp = new Date().toISOString();
     // Get current date in YYYY-MM-DD format (UTC)
-    const today = timestamp.split("T")[0];
+    const today = timestamp.split('T')[0];
 
     console.log(
       `[${timestamp}] Counting message for user ${displayName} (${userId}) on ${platform}, length: ${messageLength}`
@@ -50,9 +50,7 @@ export async function countUserMessage(
       .bind(today, platform, userId, messageLength, messageLength)
       .run();
 
-    console.log(
-      `[${timestamp}] Message count and length updated for ${displayName} on ${today}`
-    );
+    console.log(`[${timestamp}] Message count and length updated for ${displayName} on ${today}`);
   } catch (error) {
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] Error tracking message:`, error);
@@ -72,9 +70,7 @@ export async function isTelegramThreadIdInBlacklist(
 ): Promise<boolean> {
   try {
     const { results } = await db
-      .prepare(
-        "SELECT 1 FROM blacklist_topic WHERE message_thread_id = ? LIMIT 1"
-      )
+      .prepare('SELECT 1 FROM blacklist_topic WHERE message_thread_id = ? LIMIT 1')
       .bind(threadId)
       .all<{ message_thread_id: string }>();
     return results.length > 0;

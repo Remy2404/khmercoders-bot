@@ -1,8 +1,8 @@
-import { Context } from "hono";
-import { TelegramMessage } from "../types/telegram";
-import { processPingCommand } from "./ping";
-import { processHelpCommand } from "./help";
-import { processSummaryCommand } from "./summary";
+import { Context } from 'hono';
+import { TelegramMessage } from '../types/telegram';
+import { processPingCommand } from './ping';
+import { processHelpCommand } from './help';
+import { processSummaryCommand } from './summary';
 
 export interface Command {
   name: string;
@@ -16,18 +16,18 @@ export interface Command {
 
 export const commands: Command[] = [
   {
-    name: "ping",
+    name: 'ping',
     process: processPingCommand,
-    isMatch: (text) => text?.startsWith("/ping") ?? false,
+    isMatch: text => text?.startsWith('/ping') ?? false,
   },
   {
-    name: "help",
+    name: 'help',
     process: processHelpCommand,
-    isMatch: (text) => text?.startsWith("/help") ?? false,
+    isMatch: text => text?.startsWith('/help') ?? false,
   },
   {
-    name: "summary",
+    name: 'summary',
     process: processSummaryCommand,
-    isMatch: (text) => text?.startsWith("/summary") ?? false,
+    isMatch: text => text?.startsWith('/summary') ?? false,
   },
 ];

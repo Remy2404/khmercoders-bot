@@ -1,9 +1,6 @@
-import { Context } from "hono";
-import { TelegramMessage } from "../types/telegram";
-import {
-  sendTelegramMessage,
-  sendTelegramChatAction,
-} from "../utils/telegram-helpers";
+import { Context } from 'hono';
+import { TelegramMessage } from '../types/telegram';
+import { sendTelegramMessage, sendTelegramChatAction } from '../utils/telegram-helpers';
 
 /**
  * Process the /help command
@@ -25,13 +22,11 @@ export async function processHelpCommand(
   try {
     console.log(
       `[${timestamp}] Processing /help command for chat ${chatId}${
-        threadId ? `, thread ${threadId}` : ""
+        threadId ? `, thread ${threadId}` : ''
       }`
     );
-    console.log(
-      `[${timestamp}] Attempting to send 'typing' action for /help...`
-    );
-    await sendTelegramChatAction(botToken, chatId, "typing", threadId);
+    console.log(`[${timestamp}] Attempting to send 'typing' action for /help...`);
+    await sendTelegramChatAction(botToken, chatId, 'typing', threadId);
     console.log(`[${timestamp}] 'typing' action sent for /help.`);
 
     const helpMessage = `
@@ -42,25 +37,17 @@ o /summary - Summarizes recent chat messages.
 o /ping - Checks if the bot is online.
     `;
 
-    await sendTelegramMessage(
-      botToken,
-      chatId,
-      helpMessage,
-      threadId,
-      messageId
-    );
+    await sendTelegramMessage(botToken, chatId, helpMessage, threadId, messageId);
 
     console.log(
-      `[${timestamp}] Sent help message to chat ${chatId}${
-        threadId ? `, thread ${threadId}` : ""
-      }`
+      `[${timestamp}] Sent help message to chat ${chatId}${threadId ? `, thread ${threadId}` : ''}`
     );
   } catch (error) {
     console.error(`[${timestamp}] Error processing help command:`, error);
     await sendTelegramMessage(
       botToken,
       chatId,
-      "Sorry, an error occurred while processing your help request.",
+      'Sorry, an error occurred while processing your help request.',
       threadId,
       messageId
     );
