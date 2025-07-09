@@ -1,0 +1,12 @@
+# Ignore
+worker-configuration.d.ts
+public
+
+# Ignore all JSON files:
+*.json
+*.jsonc
+*.js
+package-lock.json
+
+# Ignore all markdown files:
+*.md
