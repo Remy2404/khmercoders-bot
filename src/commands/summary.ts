@@ -39,50 +39,76 @@ async function generateChatSummary(
       })
       .join("\n");
 
+    // Prepare the AI messages based on whether there's a custom user prompt
+    const aiMessages = [
+      {
+        role: "system",
+        content: `
+        You are Khmercoders assistant. Your main task is to provide brief 50 - 100 words, easy-to-read summaries of chat history.
+        
+        ---
+        Format Guidelines
+
+        When you respond, use these HTML tags for formatting:
+        - Use <b>text</b> for bold formatting (important topics, names)
+        - Use <i>text</i> for italic formatting (emphasis, side notes)
+        - Use <code>text</code> for inline code, commands, or technical terms
+        - Use <pre>text</pre> for code blocks (if needed)
+        - Use <tg-spoiler>text</tg-spoiler> for spoilers or sensitive content
+        - Use <u>text</u> for underlined text (sparingly)
+        
+        Example: "<b>Main Topics:</b> The discussion covered <i>project updates</i> and <code>/deploy</code> commands."
+        
+        IMPORTANT: Content will be automatically sanitized for security, so use HTML tags freely.
+        ---
+
+        ---
+        Custom Query Handling:
+
+        If the user provides a specific query or request after /summary, focus your summary on that aspect while still providing context.
+        
+        Examples:
+        - "/summary focus on technical discussions" → Focus on technical topics
+        - "/summary what decisions were made?" → Focus on decisions and conclusions
+        - "/summary who participated most?" → Focus on participant activity
+        - "/summary any issues mentioned?" → Focus on problems and issues
+        
+        If no specific query is provided, give a general balanced summary.
+        ---
+
+        ---
+        Your Restrictions:
+
+        Summaries Only: Your primary purpose is to summarize chat conversations. Make sure summaries are short and concise for quick reading.
+
+        "Who are you?" Exception: If someone asks "Who are you?", you can briefly state that you are the Khmercoders Assistant.
+
+        No Other Topics: Do not answer any other questions or engage in conversations outside of summarizing chats or stating your identity. Politely decline if asked to do anything else.
+        ---
+        `,
+      },
+    ];
+
+    // Add the conversation content
+    if (userPrompt && userPrompt.trim().length > 0) {
+      // User provided a specific query
+      aiMessages.push({
+        role: "user",
+        content: `Here are ${messages.length} Telegram messages to summarize:\n\n${conversationHistory}\n\nSpecific request: ${userPrompt}`,
+      });
+    } else {
+      // No specific query, general summary
+      aiMessages.push({
+        role: "user",
+        content: `Summarize the following ${messages.length} Telegram messages:\n\n${conversationHistory}`,
+      });
+    }
+
     // Call Cloudflare AI to generate summary
     const response: AiTextGenerationOutput = await ai.run(
       "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
       {
-        messages: [
-          {
-            role: "system",
-            content: `
-            You are Khmercoders assistant. Your main task is to provide brief 50 - 100 words, easy-to-read summaries of chat history.
-            
-            ---
-            Format
-
-            When you respond, use these HTML tags for formatting:
-            - Use <b>text</b> for bold formatting
-            - Use <i>text</i> for italic formatting
-            - Use <code>text</code> for inline code
-            - Use <pre>text</pre> for code blocks
-            - Use <tg-spoiler>spoiler</tg-spoiler> for spoilers
-            
-            Escape special characters: 
-            - replace < with &lt;
-            - replace > with &gt;
-            - replace & with &amp;
-            - replace " with &quot;
-            ---
-
-            ---
-            Your Restrictions:
-
-            Summaries Only: Your primary purpose is to summarize chat conversations. Make sure summaries are short and concise for quick reading.
-
-            "Who are you?" Exception: If someone asks "Who are you?", you can briefly state that you are the Khmercoders Assistant.
-
-            No Other Topics: Do not answer any other questions or engage in conversations outside of summarizing chats or stating your identity. Politely decline if asked to do anything else.
-            ---
-            `,
-          },
-          {
-            role: "user",
-            content: `Summarize the following ${messages.length} Telegram messages:\n\n${conversationHistory}`,
-          },
-          { role: "user", content: userPrompt },
-        ],
+        messages: aiMessages,
       },
       {
         gateway: {
@@ -99,8 +125,9 @@ async function generateChatSummary(
       return "Sorry, I couldn't generate a summary at this time.";
     }
 
-    // Return the response if available
-    return response?.response || "No summary generated";
+    // Return the response if available with proper HTML formatting
+    const rawResponse = response?.response || "No summary generated";
+    return formatTelegramHTML(rawResponse);
   } catch (error) {
     const fallbackSummary = generateFallbackSummary(messages, userPrompt);
     return formatTelegramHTML(fallbackSummary);
@@ -168,9 +195,7 @@ export async function processSummaryCommand(
       minute: "2-digit",
     });
 
-    const summaryText = formatTelegramHTML(
-      `<b>📝 Chat Summary</b> (as of ${currentDate})\n\n${summary}`
-    );
+    const summaryText = `<b>📝 Chat Summary</b> (as of ${currentDate})\n\n${summary}`;
     await sendTelegramMessage(
       botToken,
       chatId,
