@@ -102,8 +102,8 @@ async function generateChatSummary(
     // Return the response if available
     return response?.response || "No summary generated";
   } catch (error) {
-    console.error(`Error generating summary:`, error);
-    return "Sorry, I couldn't generate a summary at this time.";
+    const fallbackSummary = generateFallbackSummary(messages, userPrompt);
+    return formatTelegramHTML(fallbackSummary);
   }
 }
 
@@ -168,7 +168,9 @@ export async function processSummaryCommand(
       minute: "2-digit",
     });
 
-    const summaryText = `<b>📝 Chat Summary</b> (as of ${currentDate})\n\n${summary}`;
+    const summaryText = formatTelegramHTML(
+      `<b>📝 Chat Summary</b> (as of ${currentDate})\n\n${summary}`
+    );
     await sendTelegramMessage(
       botToken,
       chatId,
@@ -193,4 +195,173 @@ export async function processSummaryCommand(
       message.message_id
     );
   }
+}
+
+/**
+ * Sanitize and format HTML content for Telegram messages
+ *
+ * @param htmlContent - Raw HTML content
+ * @returns Sanitized HTML string safe for Telegram
+ */
+function formatTelegramHTML(htmlContent: string): string {
+  try {
+    // Telegram's allowed HTML tags
+    const telegramAllowedTags = [
+      "b",
+      "strong",
+      "i",
+      "em",
+      "u",
+      "ins",
+      "s",
+      "strike",
+      "del",
+      "code",
+      "pre",
+      "a",
+      "tg-spoiler",
+    ];
+
+    // First, escape all HTML entities to prevent XSS
+    let sanitized = htmlContent
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#x27;");
+
+    // Re-allow only Telegram's supported HTML tags
+    telegramAllowedTags.forEach((tag) => {
+      // Allow opening tags
+      const openTagRegex = new RegExp(`&lt;${tag}&gt;`, "gi");
+      sanitized = sanitized.replace(openTagRegex, `<${tag}>`);
+
+      // Allow closing tags
+      const closeTagRegex = new RegExp(`&lt;\\/${tag}&gt;`, "gi");
+      sanitized = sanitized.replace(closeTagRegex, `</${tag}>`);
+    });
+
+    // Handle special case for <a> tags with href attribute
+    // Pattern: &lt;a href=&quot;URL&quot;&gt; -> <a href="URL">
+    sanitized = sanitized.replace(
+      /&lt;a\s+href=&quot;([^&"]+)&quot;&gt;/gi,
+      '<a href="$1">'
+    );
+
+    // Handle closing </a> tags
+    sanitized = sanitized.replace(/&lt;\/a&gt;/gi, "</a>");
+
+    // Validate that tags are properly nested and remove malformed ones
+    sanitized = validateAndCleanTelegramHTML(sanitized);
+
+    return sanitized;
+  } catch (error) {
+    console.error("Error formatting HTML for Telegram:", error);
+    // Return plain text fallback on error
+    return htmlContent.replace(/<[^>]*>/g, "");
+  }
+}
+
+/**
+ * Validate and clean Telegram HTML to ensure proper tag nesting
+ *
+ * @param html - HTML string to validate
+ * @returns Cleaned HTML string
+ */
+function validateAndCleanTelegramHTML(html: string): string {
+  try {
+    // Remove any tags that are not properly closed or nested
+    // This is a simple validation - for more complex validation, we'd need a proper HTML parser
+
+    // Remove empty tags
+    html = html.replace(
+      /<(b|strong|i|em|u|ins|s|strike|del|code|pre|tg-spoiler)><\/\1>/gi,
+      ""
+    );
+
+    // Remove nested identical tags (Telegram doesn't support nested formatting of same type)
+    const tagsToCheck = [
+      "b",
+      "strong",
+      "i",
+      "em",
+      "u",
+      "ins",
+      "s",
+      "strike",
+      "del",
+      "code",
+      "tg-spoiler",
+    ];
+
+    tagsToCheck.forEach((tag) => {
+      // Remove nested identical tags: <b><b>text</b></b> -> <b>text</b>
+      const nestedRegex = new RegExp(
+        `<${tag}>([^<]*)<${tag}>([^<]*)<\\/${tag}>([^<]*)<\\/${tag}>`,
+        "gi"
+      );
+      html = html.replace(nestedRegex, `<${tag}>$1$2$3</${tag}>`);
+    });
+
+    return html;
+  } catch (error) {
+    console.error("Error validating Telegram HTML:", error);
+    return html;
+  }
+}
+
+/**
+ * Generate a fallback summary when AI is unavailable
+ *
+ * @param messages - Array of chat messages
+ * @param userPrompt - Optional user query
+ * @returns Simple text summary
+ */
+function generateFallbackSummary(
+  messages: Array<{
+    message_text: string;
+    sender_name: string;
+    message_date: string;
+  }>,
+  userPrompt: string
+): string {
+  if (messages.length === 0) {
+    return "<b>📭 No Messages:</b> <i>No messages found to summarize.</i>";
+  }
+
+  // Get unique participants
+  const participants = [...new Set(messages.map((msg) => msg.sender_name))];
+
+  // Get date range
+  const dates = messages.map((msg) => new Date(msg.message_date));
+  const earliestDate = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const latestDate = new Date(Math.max(...dates.map((d) => d.getTime())));
+
+  const formatDate = (date: Date) =>
+    date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  // Create basic summary
+  let summary = `<b>💬 Chat Activity Summary</b>\n\n`;
+  summary += `<b>📊 Stats:</b>\n`;
+  summary += `• <i>Messages:</i> ${messages.length}\n`;
+  summary += `• <i>Participants:</i> ${
+    participants.length
+  } (${participants.join(", ")})\n`;
+  summary += `• <i>Time Range:</i> ${formatDate(earliestDate)} - ${formatDate(
+    latestDate
+  )}\n\n`;
+
+  if (userPrompt && userPrompt.trim().length > 0) {
+    summary += `<b>🔍 Query:</b> <i>"${userPrompt}"</i>\n\n`;
+    summary += `<b>📝 Note:</b> <i>AI summarization is temporarily unavailable. Please try again later for detailed analysis.</i>`;
+  } else {
+    summary += `<b>📝 Note:</b> <i>AI summarization is temporarily unavailable. Showing basic chat statistics instead.</i>`;
+  }
+
+  return summary;
 }
