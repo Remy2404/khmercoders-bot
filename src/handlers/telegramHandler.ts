@@ -1,11 +1,8 @@
-import { Context } from "hono";
-import { TelegramUpdate } from "../types/telegram";
-import {
-  isTelegramThreadIdInBlacklist,
-  countUserMessage,
-} from "../utils/db-helpers";
-import { recordTelegramChannelMessage } from "../utils/telegram-helpers";
-import { commands } from "../commands";
+import { Context } from 'hono';
+import { TelegramUpdate } from '../types/telegram';
+import { isTelegramThreadIdInBlacklist, countUserMessage } from '../utils/db-helpers';
+import { recordTelegramChannelMessage } from '../utils/telegram-helpers';
+import { commands } from '../commands';
 
 /**
  * Handle incoming telegram webhook requests
@@ -22,27 +19,23 @@ export async function handleTelegramWebhook(
     // Parse the incoming webhook data
     const update: TelegramUpdate = await c.req.json();
 
-    console.log("Request body:", JSON.stringify(update, null, 2));
+    console.log('Request body:', JSON.stringify(update, null, 2));
 
     // Early return if no new message found (we only want to count new messages)
     if (!update.message) {
-      console.log(
-        `[${timestamp}] No new message found in the update or it's an edited message`
-      );
-      return c.json({ success: true, message: "Ignoring non-new messages" });
+      console.log(`[${timestamp}] No new message found in the update or it's an edited message`);
+      return c.json({ success: true, message: 'Ignoring non-new messages' });
     }
 
     // Only use regular new messages
     const message = update.message;
 
     // Only count/process messages from supergroups (avoid DMs)
-    if (message.chat.type !== "supergroup") {
-      console.log(
-        `[${timestamp}] Ignoring message from non-supergroup chat: ${message.chat.type}`
-      );
+    if (message.chat.type !== 'supergroup') {
+      console.log(`[${timestamp}] Ignoring message from non-supergroup chat: ${message.chat.type}`);
       return c.json({
         success: true,
-        message: "Ignoring non-supergroup message",
+        message: 'Ignoring non-supergroup message',
       });
     }
 
@@ -61,7 +54,7 @@ export async function handleTelegramWebhook(
       message.pinned_message
     ) {
       console.log(`[${timestamp}] Ignoring service message (join/leave/etc)`);
-      return c.json({ success: true, message: "Ignoring service message" });
+      return c.json({ success: true, message: 'Ignoring service message' });
     }
 
     // Use wrangler environment variables (.dev.vars)
@@ -79,7 +72,7 @@ export async function handleTelegramWebhook(
     // We can only count messages that have a sender
     if (!message || !message.from) {
       console.log(`[${timestamp}] No sender information in the message`);
-      return c.json({ success: false, error: "No sender information" });
+      return c.json({ success: false, error: 'No sender information' });
     }
 
     // Don't count messages from bots
@@ -89,34 +82,28 @@ export async function handleTelegramWebhook(
           message.from.username || message.from.first_name
         }`
       );
-      return c.json({ success: true, message: "Ignored bot message" });
+      return c.json({ success: true, message: 'Ignored bot message' });
     }
 
     // Format display name (prioritize first+last name over username)
     const displayName = message.from.first_name
-      ? `${message.from.first_name}${
-          message.from.last_name ? " " + message.from.last_name : ""
-        }`
-      : message.from.username || "Unknown User";
+      ? `${message.from.first_name}${message.from.last_name ? ' ' + message.from.last_name : ''}`
+      : message.from.username || 'Unknown User';
 
-    const text = message.text || "";
+    const text = message.text || '';
 
-    console.log(
-      `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`
-    );
+    console.log(`[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`);
 
     // Track the message in our database
     await countUserMessage(
       c.env.DB,
-      "telegram",
+      'telegram',
       message.from.id.toString(),
       displayName,
       text.length
     );
 
-    console.log(
-      `[${timestamp}] Successfully counted message from user: ${displayName}`
-    );
+    console.log(`[${timestamp}] Successfully counted message from user: ${displayName}`);
 
     // Check if the message is in a blacklisted topic
     if (message.message_thread_id) {
@@ -130,7 +117,7 @@ export async function handleTelegramWebhook(
         );
         return c.json({
           success: true,
-          message: "Ignoring message in blacklisted topic",
+          message: 'Ignoring message in blacklisted topic',
         });
       }
     }
@@ -144,6 +131,6 @@ export async function handleTelegramWebhook(
   } catch (error) {
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] Error processing webhook:`, error);
-    return c.json({ success: false, error: "Internal server error" }, 500);
+    return c.json({ success: false, error: 'Internal server error' }, 500);
   }
 }

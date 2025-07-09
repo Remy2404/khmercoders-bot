@@ -1,5 +1,5 @@
 // Telegram helpers for channel and supergroup message recording
-import { TelegramMessage } from "../types/telegram";
+import { TelegramMessage } from '../types/telegram';
 
 /**
  * Record a message from a Telegram channel or supergroup in the database
@@ -19,38 +19,32 @@ export async function recordTelegramChannelMessage(
 
     const chatId = message.chat.id.toString();
     const chatType = message.chat.type;
-    const chatTitle = message.chat.title || "Unknown Channel";
+    const chatTitle = message.chat.title || 'Unknown Channel';
 
     // Get sender info if available
     const senderId = message.from ? message.from.id.toString() : null;
-    let senderName = "Unknown User";
+    let senderName = 'Unknown User';
     if (message.from) {
       senderName = message.from.first_name
-        ? `${message.from.first_name}${
-            message.from.last_name ? " " + message.from.last_name : ""
-          }`
-        : message.from.username || "Unknown User";
+        ? `${message.from.first_name}${message.from.last_name ? ' ' + message.from.last_name : ''}`
+        : message.from.username || 'Unknown User';
     }
 
-    console.log(
-      `[${timestamp}] Recording ${chatType} message from chat: ${chatTitle} (${chatId})`
-    ); // Determine media type if any
+    console.log(`[${timestamp}] Recording ${chatType} message from chat: ${chatTitle} (${chatId})`); // Determine media type if any
     let mediaType = null;
-    if (message.photo) mediaType = "photo";
-    if (message.video) mediaType = "video";
-    if (message.document) mediaType = "document";
-    if (message.audio) mediaType = "audio";
+    if (message.photo) mediaType = 'photo';
+    if (message.video) mediaType = 'video';
+    if (message.document) mediaType = 'document';
+    if (message.audio) mediaType = 'audio';
 
     // Handle forwarded message info
     let forwardedFrom = null;
     if (message.forward_from) {
       forwardedFrom = message.forward_from.first_name
         ? `${message.forward_from.first_name}${
-            message.forward_from.last_name
-              ? " " + message.forward_from.last_name
-              : ""
+            message.forward_from.last_name ? ' ' + message.forward_from.last_name : ''
           }`
-        : message.forward_from.username || "Unknown User";
+        : message.forward_from.username || 'Unknown User';
     } else if (message.forward_from_chat) {
       forwardedFrom =
         message.forward_from_chat.title ||
@@ -59,8 +53,7 @@ export async function recordTelegramChannelMessage(
     }
 
     // Handle reply to message
-    const replyToMessageId =
-      message.reply_to_message?.message_id?.toString() || null;
+    const replyToMessageId = message.reply_to_message?.message_id?.toString() || null;
 
     // Get message thread ID if it exists
     const messageThreadId = message.message_thread_id?.toString() || null;
@@ -90,7 +83,7 @@ export async function recordTelegramChannelMessage(
         chatTitle,
         senderId,
         senderName,
-        message.text || "",
+        message.text || '',
         messageDate,
         mediaType,
         forwardedFrom,
@@ -99,9 +92,7 @@ export async function recordTelegramChannelMessage(
       )
       .run();
 
-    console.log(
-      `[${timestamp}] Successfully recorded ${chatType} message from: ${chatTitle}`
-    );
+    console.log(`[${timestamp}] Successfully recorded ${chatType} message from: ${chatTitle}`);
   } catch (error) {
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] Error recording channel message:`, error);
@@ -131,12 +122,12 @@ export async function sendTelegramMessage(
     chat_id: string | number;
     text: string;
     message_thread_id?: string | number;
-    parse_mode: "HTML";
+    parse_mode: 'HTML';
     reply_to_message_id?: number;
   } = {
     chat_id: chatId,
     text: text,
-    parse_mode: "HTML", // Use HTML parsing for better formatting
+    parse_mode: 'HTML', // Use HTML parsing for better formatting
   };
 
   if (threadId) {
@@ -148,9 +139,9 @@ export async function sendTelegramMessage(
   }
 
   const response = await fetch(apiUrl, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
   });
@@ -249,16 +240,14 @@ export async function sendTelegramChatAction(
   }
 
   const response = await fetch(apiUrl, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
   });
 
   const responseText = await response.text();
-  console.log(
-    `[sendTelegramChatAction] API Response: ${response.status} - ${responseText}`
-  );
+  console.log(`[sendTelegramChatAction] API Response: ${response.status} - ${responseText}`);
   return response;
 }

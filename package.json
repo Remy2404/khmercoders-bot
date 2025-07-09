@@ -6,12 +6,14 @@
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "migrate:dev": "wrangler d1 migrations apply kcc-chatbot",
     "migrate:prod": "wrangler d1 migrations apply kcc-chatbot --remote",
-    "test:webhook": "curl -X POST http://localhost:8787/telegram/webhook -H \"Content-Type: application/json\" -d @test/telegram-sample.json"
+    "test:webhook": "curl -X POST http://localhost:8787/telegram/webhook -H \"Content-Type: application/json\" -d @test/telegram-sample.json",
+    "format": "prettier --write \"src/**/*.{ts,js}\""
   },
   "dependencies": {
     "hono": "^4.7.10"
   },
   "devDependencies": {
+    "prettier": "^3.6.2",
     "wrangler": "^4.18.0"
   }
 }
