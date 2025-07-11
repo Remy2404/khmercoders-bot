@@ -35,6 +35,7 @@ export async function processHelpCommand(
 o /help - Displays this help message.
 o /summary - Summarizes recent chat messages.
 o /ping - Checks if the bot is online.
+o /link <code> - Links your Telegram account (private messages only).
     `;
 
     await sendTelegramMessage(botToken, chatId, helpMessage, threadId, messageId);
