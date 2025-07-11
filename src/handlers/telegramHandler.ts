@@ -30,12 +30,24 @@ export async function handleTelegramWebhook(
     // Only use regular new messages
     const message = update.message;
 
-    // Only count/process messages from supergroups (avoid DMs)
-    if (message.chat.type !== 'supergroup') {
+    // Check if this is a private message with a /link command
+    const isLinkCommand = message.text?.startsWith('/link');
+
+    // Only count/process messages from supergroups (avoid DMs), except for /link commands
+    if (message.chat.type !== 'supergroup' && !isLinkCommand) {
       console.log(`[${timestamp}] Ignoring message from non-supergroup chat: ${message.chat.type}`);
       return c.json({
         success: true,
         message: 'Ignoring non-supergroup message',
+      });
+    }
+
+    // For private messages, only process /link commands
+    if (message.chat.type === 'private' && !isLinkCommand) {
+      console.log(`[${timestamp}] Ignoring non-link command in private chat`);
+      return c.json({
+        success: true,
+        message: 'Only /link command is supported in private messages',
       });
     }
 
@@ -63,68 +75,95 @@ export async function handleTelegramWebhook(
     if (botToken && message.text) {
       for (const command of commands) {
         if (command.isMatch(message.text)) {
-          c.executionCtx.waitUntil(command.process(c, message, botToken));
+          try {
+            // Special handling for /link command in supergroups - don't process, just warn
+            if (command.name === 'link' && message.chat.type === 'supergroup') {
+              const { sendTelegramMessage } = await import('../utils/telegram-helpers');
+              await sendTelegramMessage(
+                botToken,
+                message.chat.id.toString(),
+                '🔒 For security reasons, the /link command can only be used in private messages with the bot. Please send me a direct message to link your account.',
+                message.message_thread_id?.toString(),
+                message.message_id
+              );
+              break;
+            }
+
+            // For private messages with /link command, process immediately instead of using waitUntil
+            if (message.chat.type === 'private' && command.name === 'link') {
+              await command.process(c, message, botToken);
+            } else {
+              c.executionCtx.waitUntil(command.process(c, message, botToken));
+            }
+          } catch (commandError) {
+            console.error(`[${timestamp}] Error processing command ${command.name}:`, commandError);
+          }
           break; // Exit loop once a command is matched
         }
       }
     }
 
-    // We can only count messages that have a sender
-    if (!message || !message.from) {
-      console.log(`[${timestamp}] No sender information in the message`);
-      return c.json({ success: false, error: 'No sender information' });
-    }
-
-    // Don't count messages from bots
-    if (message.from.is_bot) {
-      console.log(
-        `[${timestamp}] Ignored message from bot: ${
-          message.from.username || message.from.first_name
-        }`
-      );
-      return c.json({ success: true, message: 'Ignored bot message' });
-    }
-
-    // Format display name (prioritize first+last name over username)
-    const displayName = message.from.first_name
-      ? `${message.from.first_name}${message.from.last_name ? ' ' + message.from.last_name : ''}`
-      : message.from.username || 'Unknown User';
-
-    const text = message.text || '';
-
-    console.log(`[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`);
-
-    // Track the message in our database
-    await countUserMessage(
-      c.env.DB,
-      'telegram',
-      message.from.id.toString(),
-      displayName,
-      text.length
-    );
-
-    console.log(`[${timestamp}] Successfully counted message from user: ${displayName}`);
-
-    // Check if the message is in a blacklisted topic
-    if (message.message_thread_id) {
-      const isBlacklisted = await isTelegramThreadIdInBlacklist(
-        c.env.DB,
-        message.message_thread_id.toString()
-      );
-      if (isBlacklisted) {
-        console.log(
-          `[${timestamp}] Ignoring message in blacklisted topic: ${message.message_thread_id}`
-        );
-        return c.json({
-          success: true,
-          message: 'Ignoring message in blacklisted topic',
-        });
+    // Only count and record messages for supergroups, not private messages
+    if (message.chat.type === 'supergroup') {
+      // We can only count messages that have a sender
+      if (!message || !message.from) {
+        console.log(`[${timestamp}] No sender information in the message`);
+        return c.json({ success: false, error: 'No sender information' });
       }
-    }
 
-    // if isBlacklisted = false, record messages into DB
-    if (message) {
-      await recordTelegramChannelMessage(c.env.DB, message);
+      // Don't count messages from bots
+      if (message.from.is_bot) {
+        console.log(
+          `[${timestamp}] Ignored message from bot: ${
+            message.from.username || message.from.first_name
+          }`
+        );
+        return c.json({ success: true, message: 'Ignored bot message' });
+      }
+
+      // Format display name (prioritize first+last name over username)
+      const displayName = message.from.first_name
+        ? `${message.from.first_name}${message.from.last_name ? ' ' + message.from.last_name : ''}`
+        : message.from.username || 'Unknown User';
+
+      const text = message.text || '';
+
+      console.log(
+        `[${timestamp}] Processing message from user: ${displayName} (${message.from.id})`
+      );
+
+      // Track the message in our database
+      await countUserMessage(
+        c.env.DB,
+        'telegram',
+        message.from.id.toString(),
+        displayName,
+        text.length
+      );
+
+      console.log(`[${timestamp}] Successfully counted message from user: ${displayName}`);
+
+      // Check if the message is in a blacklisted topic
+      if (message.message_thread_id) {
+        const isBlacklisted = await isTelegramThreadIdInBlacklist(
+          c.env.DB,
+          message.message_thread_id.toString()
+        );
+        if (isBlacklisted) {
+          console.log(
+            `[${timestamp}] Ignoring message in blacklisted topic: ${message.message_thread_id}`
+          );
+          return c.json({
+            success: true,
+            message: 'Ignoring message in blacklisted topic',
+          });
+        }
+      }
+
+      // if isBlacklisted = false, record messages into DB
+      if (message) {
+        await recordTelegramChannelMessage(c.env.DB, message);
+      }
     }
 
     return c.json({ success: true });
