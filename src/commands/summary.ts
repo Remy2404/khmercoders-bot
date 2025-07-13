@@ -15,25 +15,25 @@ import {
 function convertMarkdownToHTML(text: string): string {
   try {
     // Convert **bold** and __bold__ to <b>bold</b>
-    text = text.replace(/\*\*(.*?)\*\*/g, "<b>$1</b>");
-    text = text.replace(/__(.*?)__/g, "<b>$1</b>");
+    text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+    text = text.replace(/__(.*?)__/g, '<b>$1</b>');
 
     // Convert *italic* and _italic_ to <i>italic</i>
-    text = text.replace(/\*(.*?)\*/g, "<i>$1</i>");
-    text = text.replace(/_(.*?)_/g, "<i>$1</i>");
+    text = text.replace(/\*(.*?)\*/g, '<i>$1</i>');
+    text = text.replace(/_(.*?)_/g, '<i>$1</i>');
 
     // Convert `code` to <code>code</code>
-    text = text.replace(/`(.*?)`/g, "<code>$1</code>");
+    text = text.replace(/`(.*?)`/g, '<code>$1</code>');
 
     // Convert ```code blocks``` to <pre>code</pre>
-    text = text.replace(/```([\s\S]*?)```/g, "<pre>$1</pre>");
+    text = text.replace(/```([\s\S]*?)```/g, '<pre>$1</pre>');
 
     // Convert ~~strikethrough~~ to <s>strikethrough</s>
-    text = text.replace(/~~(.*?)~~/g, "<s>$1</s>");
+    text = text.replace(/~~(.*?)~~/g, '<s>$1</s>');
 
     return text;
   } catch (error) {
-    console.error("Error converting Markdown to HTML:", error);
+    console.error('Error converting Markdown to HTML:', error);
     return text;
   }
 }
@@ -157,16 +157,16 @@ async function generateChatSummary(
 
     // Return the response if available with proper HTML formatting
     const rawResponse = response?.response || 'No summary generated';
-    console.log("Raw AI response:", rawResponse);
-    
+    console.log('Raw AI response:', rawResponse);
+
     // Convert Markdown to HTML first, then sanitize for Telegram
     const markdownConverted = convertMarkdownToHTML(rawResponse);
-    console.log("Markdown converted response:", markdownConverted);
-    
+    console.log('Markdown converted response:', markdownConverted);
+
     return formatTelegramHTML(markdownConverted);
   } catch (error) {
     console.error(`Error generating summary:`, error);
-    
+
     // Provide a fallback summary when AI fails
     const fallbackSummary = generateFallbackSummary(messages, userPrompt);
     const fallbackConverted = convertMarkdownToHTML(fallbackSummary);
