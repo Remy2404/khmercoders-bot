@@ -34,7 +34,7 @@ export async function handleTelegramWebhook(
     const isLinkCommand = message.text?.startsWith('/link');
 
     // Only count/process messages from supergroups (avoid DMs), except for /link commands
-    if (message.chat.type !== 'supergroup' && !isLinkCommand) {
+    if (message.chat.type !== 'supergroup' && !isLinkCommand && !c.env.DEV_MODE) {
       console.log(`[${timestamp}] Ignoring message from non-supergroup chat: ${message.chat.type}`);
       return c.json({
         success: true,
@@ -43,7 +43,7 @@ export async function handleTelegramWebhook(
     }
 
     // For private messages, only process /link commands
-    if (message.chat.type === 'private' && !isLinkCommand) {
+    if (message.chat.type === 'private' && !isLinkCommand && !c.env.DEV_MODE) {
       console.log(`[${timestamp}] Ignoring non-link command in private chat`);
       return c.json({
         success: true,

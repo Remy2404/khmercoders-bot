@@ -32,9 +32,12 @@ In the root directory, create a file named `.dev.vars` with the following struct
 
 ```
 TELEGRAM_BOT_TOKEN="YOUR_TELEGRAM_BOT_TOKEN_HERE"
+DEV_MODE=1
 ```
 
-**Important**: Replace `YOUR_TELEGRAM_BOT_TOKEN_HERE` with the actual token you receive from BotFather (see "Telegram Bot Setup" below). This file is ignored by Git, so your token will not be committed to the repository.
+> [!IMPORTANT]
+> Replace `YOUR_TELEGRAM_BOT_TOKEN_HERE` with the actual token you receive from BotFather (see "Telegram Bot Setup" below). This file is ignored by Git, so your token will not be committed to the repository.
+> `DEV_MODE` only needed for development.
 
 ### Running the Service
 
