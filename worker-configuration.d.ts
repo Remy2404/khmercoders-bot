@@ -10,7 +10,8 @@ declare namespace Cloudflare {
 		ASSETS: Fetcher;
 		KC_DEV_CHAT_ID: string;
 		GITHUB_WEBHOOK_SECRET: string;
-		GITHUB_TOKEN?: string;
+		// GITHUB_TOKEN?: string;
+		// ALLOWED_REPOS?: string;
 	}
 }
 interface CloudflareBindings extends Cloudflare.Env {}

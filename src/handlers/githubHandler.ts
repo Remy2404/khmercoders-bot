@@ -61,7 +61,8 @@ export async function handleGitHubWebhook(
     console.log(`[${timestamp}] GitHub event type: ${eventType}`);
 
     // Check if we should process this webhook (repository filtering)
-    const allowedRepos = ['khmercoders-bot']; // Add more repositories as needed
+    // Empty array = process all repositories (good for testing)
+    const allowedRepos: string[] = [];
     if (!shouldProcessWebhook(payload, allowedRepos)) {
       console.log(`[${timestamp}] Skipping webhook - repository not in allowed list`);
       return c.json({ success: true, message: 'Repository not monitored' });
