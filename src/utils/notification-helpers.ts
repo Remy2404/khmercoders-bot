@@ -1,5 +1,5 @@
 import { sendTelegramMessage } from './telegram-helpers';
-import { notificationConfig, notificationTemplates } from '../config/notifications';
+import { notificationConfig, notificationTemplates, initializeNotificationConfig } from '../config/notifications';
 import { GitHubWebhookPayload, NotificationRule } from '../types/github';
 
 /**
@@ -11,6 +11,7 @@ import { GitHubWebhookPayload, NotificationRule } from '../types/github';
  * @param data - Processed notification data
  * @param template - Template type to use
  * @param channels - Target channel IDs
+ * @param env - Environment variables for configuration
  */
 export async function sendGitHubNotification(
   db: D1Database,
@@ -18,11 +19,17 @@ export async function sendGitHubNotification(
   eventType: string,
   data: any,
   template: string,
-  channels: string[]
+  channels: string[],
+  env?: CloudflareBindings
 ): Promise<void> {
   try {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] Sending GitHub notification: ${eventType} to channels: ${channels.join(', ')}`);
+
+    // Initialize config with environment variables if provided
+    if (env) {
+      initializeNotificationConfig(env);
+    }
 
     // Get the template function
     const templateCategory = notificationTemplates[template as keyof typeof notificationTemplates];
@@ -41,9 +48,14 @@ export async function sendGitHubNotification(
       templateFunction = (templateCategory as any).issue_opened || (templateCategory as any).default;
     } else if (eventType.includes('issues.closed')) {
       templateFunction = (templateCategory as any).issue_closed || (templateCategory as any).default;
+    } else if (eventType === 'push') {
+      templateFunction = (templateCategory as any).push || (templateCategory as any).default;
     } else {
       templateFunction = (templateCategory as any).default;
     }
+
+    console.log(`[${timestamp}] Template function found for ${eventType}:`, !!templateFunction);
+    console.log(`[${timestamp}] Available template variants:`, Object.keys(templateCategory));
 
     if (!templateFunction) {
       console.error(`[${timestamp}] Template function not found for: ${eventType}`);
@@ -63,8 +75,12 @@ export async function sendGitHubNotification(
         const channelConfig = notificationConfig.channels[channelKey];
         if (!channelConfig?.chatId) {
           console.warn(`[${timestamp}] Channel config not found or missing chatId: ${channelKey}`);
+          console.log(`[${timestamp}] Available channels:`, Object.keys(notificationConfig.channels));
+          console.log(`[${timestamp}] Channel ${channelKey} config:`, channelConfig);
           continue;
         }
+
+        console.log(`[${timestamp}] Sending to channel ${channelKey} with chatId: ${channelConfig.chatId}`);
 
         // Check if we've already sent this notification
         const existingNotification = await db

@@ -99,6 +99,14 @@ export const notificationConfig: NotificationConfig = {
       enabled: true
     },
 
+    // Push events
+    {
+      eventType: 'push',
+      channels: ['kc_dev'],
+      template: 'smart_alert',
+      enabled: true
+    },
+
     // Reviewer ping system (scheduled)
     {
       eventType: 'pull_request.review_stale',
@@ -116,6 +124,11 @@ export const notificationConfig: NotificationConfig = {
     }
   ]
 };
+
+// Initialize chat IDs from environment variables
+export function initializeNotificationConfig(env: CloudflareBindings): void {
+  notificationConfig.channels.kc_dev.chatId = env.KC_DEV_CHAT_ID || '';
+}
 
 // Notification templates
 export const notificationTemplates = {
@@ -144,7 +157,14 @@ ${data.merged ? '🎉 <b>Successfully merged!</b>' : '📝 <b>Closed without mer
 ✅ <b>Issue Closed:</b> #${data.number} by @${data.author}
 🗂️ <b>Title:</b> ${data.title}
 🎯 <b>Resolved!</b>
-🔗 <a href="${data.url}">View Issue</a>`
+🔗 <a href="${data.url}">View Issue</a>`,
+
+    push: (data: any) => `
+🚀 <b>New Commits:</b> ${data.branch} by @${data.author}
+📝 <b>Commit:</b> ${data.title}
+📂 <b>Repository:</b> ${data.repository}
+${data.status === 'Force Pushed' ? '⚠️ <b>Force pushed!</b>' : '✅ <b>Pushed successfully</b>'}
+🔗 <a href="${data.url}">View Commit</a>`
   },
 
   security_alert: {

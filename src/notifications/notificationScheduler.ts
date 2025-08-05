@@ -57,7 +57,7 @@ export async function processAllNotifications(
     if (config.enableSmartAlerts && shouldProcessSmartAlert(eventType)) {
       console.log(`[${timestamp}] Scheduling smart alert processing`);
       notificationPromises.push(
-        processSmartAlert(db, botToken, eventType, payload, config.defaultChannels)
+        processSmartAlert(db, botToken, eventType, payload, config.defaultChannels, env)
           .catch(error => console.error(`Smart alert error: ${error}`))
       );
     }
@@ -181,15 +181,14 @@ export async function manualTriggerNotification(
 function shouldProcessSmartAlert(eventType: string): boolean {
   const smartAlertEvents = [
     'pull_request.opened',
-    'pull_request.closed',
+    'pull_request.closed', 
     'pull_request.merged',
     'issues.opened',
-    'issues.closed'
+    'issues.closed',
+    'push'  // Add push events for commit notifications
   ];
   return smartAlertEvents.includes(eventType);
-}
-
-/**
+}/**
  * Check if event should trigger mention alert
  */
 function shouldProcessMentionAlert(eventType: string): boolean {

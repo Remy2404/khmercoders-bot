@@ -15,7 +15,7 @@ export interface SmartAlertData {
   summary?: string;
   status: string;
   labels?: string[];
-  type: 'PR' | 'Issue';
+  type: 'PR' | 'Issue' | 'Push';
   merged?: boolean;
   repository: string;
   branch?: string;
@@ -32,23 +32,34 @@ export interface SmartAlertData {
  * @param eventType - GitHub event type
  * @param payload - GitHub webhook payload
  * @param targetChannels - Array of channel keys to send to
+ * @param env - Environment variables
  */
 export async function processSmartAlert(
   db: D1Database,
   botToken: string,
   eventType: string,
   payload: GitHubWebhookPayload,
-  targetChannels: string[]
+  targetChannels: string[],
+  env?: CloudflareBindings
 ): Promise<void> {
   try {
     const timestamp = new Date().toISOString();
     console.log(`[${timestamp}] Processing smart alert for: ${eventType}`);
+
+    // Initialize configuration with environment variables
+    if (env) {
+      const { initializeNotificationConfig } = await import('../config/notifications');
+      initializeNotificationConfig(env);
+      console.log(`[${timestamp}] Initialized notification config with chat ID: ${env.KC_DEV_CHAT_ID}`);
+    }
 
     const alertData = prepareSmartAlertData(payload, eventType);
     if (!alertData) {
       console.log(`[${timestamp}] No alert data prepared for: ${eventType}`);
       return;
     }
+
+    console.log(`[${timestamp}] Alert data prepared:`, JSON.stringify(alertData, null, 2));
 
     // Send notification using the generic notification system
     await sendGitHubNotification(
@@ -57,7 +68,8 @@ export async function processSmartAlert(
       eventType,
       alertData,
       'smart_alert',
-      targetChannels
+      targetChannels,
+      env
     );
 
     console.log(`[${timestamp}] Smart alert processed successfully`);
@@ -100,6 +112,36 @@ function prepareSmartAlertData(payload: GitHubWebhookPayload, eventType: string)
       labels: issue.labels.map(l => l.name),
       type: 'Issue',
       repository: payload.repository.full_name
+    };
+  } else if ('commits' in payload && eventType === 'push') {
+    // Handle push events
+    const branch = payload.ref.replace('refs/heads/', '');
+    const commitCount = payload.commits.length;
+    const headCommit = payload.head_commit;
+    
+    if (!headCommit) {
+      // This is likely a branch deletion
+      return null;
+    }
+
+    // Skip merge commits if you only want regular commits
+    if (headCommit.message.startsWith('Merge pull request')) {
+      console.log(`Skipping merge commit notification: ${headCommit.message}`);
+      return null;
+    }
+
+    return {
+      id: Date.now(), // Use timestamp as ID for push events
+      number: 0, // Push events don't have numbers
+      title: headCommit.message.split('\n')[0], // First line of commit message
+      author: payload.sender.login,
+      url: headCommit.url,
+      summary: commitCount > 1 ? `${commitCount} commits pushed` : headCommit.message,
+      status: payload.forced ? 'Force Pushed' : 'Pushed',
+      labels: [],
+      type: 'Push' as any,
+      repository: payload.repository.full_name,
+      branch: branch
     };
   }
 
@@ -161,6 +203,17 @@ export function formatSmartAlertMessage(data: SmartAlertData, eventType: string)
   const emoji = getEventEmoji(eventType, data);
   const action = getEventAction(eventType, data);
   
+  // Handle push events differently
+  if (data.type === 'Push') {
+    let message = `${emoji} <b>${action}:</b> ${data.branch} by @${data.author}\n`;
+    message += `📝 <b>Commit:</b> ${data.title}\n`;
+    message += `📂 <b>Repository:</b> ${data.repository}\n`;
+    message += `${data.status === 'Force Pushed' ? '⚠️ <b>Force pushed!</b>' : '✅ <b>Pushed successfully</b>'}\n`;
+    message += `🔗 <a href="${data.url}">View Commit</a>`;
+    return message;
+  }
+  
+  // Handle PR/Issue events
   let message = `${emoji} <b>${action}:</b> #${data.number} by @${data.author}\n`;
   message += `🗂️ <b>Title:</b> ${data.title}\n`;
   message += `📋 <b>Summary:</b> ${data.summary}\n`;
@@ -189,6 +242,7 @@ function getEventEmoji(eventType: string, data: SmartAlertData): string {
   }
   if (eventType.includes('issues.opened')) return '🐛';
   if (eventType.includes('issues.closed')) return '✅';
+  if (eventType === 'push') return '🚀';
   
   return '📝';
 }
@@ -203,6 +257,7 @@ function getEventAction(eventType: string, data: SmartAlertData): string {
   }
   if (eventType.includes('issues.opened')) return 'New Issue Opened';
   if (eventType.includes('issues.closed')) return 'Issue Closed';
+  if (eventType === 'push') return 'New Commits';
   
   return 'Update';
 }

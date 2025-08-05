@@ -100,6 +100,44 @@ export interface GitHubIssueCommentWebhook {
   sender: GitHubUser;
 }
 
+export interface GitHubPushWebhook {
+  ref: string; // branch reference like "refs/heads/main"
+  before: string; // previous commit SHA
+  after: string; // new commit SHA
+  created: boolean;
+  deleted: boolean;
+  forced: boolean;
+  commits: {
+    id: string;
+    message: string;
+    author: {
+      name: string;
+      email: string;
+      username?: string;
+    };
+    url: string;
+    added: string[];
+    removed: string[];
+    modified: string[];
+  }[];
+  head_commit: {
+    id: string;
+    message: string;
+    author: {
+      name: string;
+      email: string;
+      username?: string;
+    };
+    url: string;
+  } | null;
+  repository: GitHubRepository;
+  pusher: {
+    name: string;
+    email: string;
+  };
+  sender: GitHubUser;
+}
+
 export interface GitHubPullRequestReviewWebhook {
   action: 'submitted' | 'edited' | 'dismissed';
   pull_request: GitHubPullRequest;
@@ -120,7 +158,8 @@ export type GitHubWebhookPayload =
   | GitHubPullRequestWebhook
   | GitHubIssuesWebhook  
   | GitHubIssueCommentWebhook
-  | GitHubPullRequestReviewWebhook;
+  | GitHubPullRequestReviewWebhook
+  | GitHubPushWebhook;
 
 // Notification configuration types
 export interface NotificationRule {
