@@ -9,7 +9,6 @@ declare namespace Cloudflare {
 		AI: Ai;
 		ASSETS: Fetcher;
 		KC_DEV_CHAT_ID: string;
-		KC_SECURITY_CHAT_ID?: string;
 		GITHUB_WEBHOOK_SECRET: string;
 		GITHUB_TOKEN?: string;
 	}

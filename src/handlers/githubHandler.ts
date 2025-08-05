@@ -24,7 +24,7 @@ export async function handleGitHubWebhook(
     console.log(`[${timestamp}] Received GitHub webhook request`);
 
     // Parse headers
-    const headers = parseGitHubHeaders(c.req.header);
+    const headers = parseGitHubHeaders((name: string) => c.req.header(name));
     console.log(`[${timestamp}] GitHub webhook headers:`, headers);
 
     // Get raw payload for signature verification
@@ -57,7 +57,7 @@ export async function handleGitHubWebhook(
     }
 
     // Determine event type
-    const eventType = getGitHubEventType(c.req.header, payload);
+    const eventType = getGitHubEventType((name: string) => c.req.header(name), payload);
     console.log(`[${timestamp}] GitHub event type: ${eventType}`);
 
     // Check if we should process this webhook (repository filtering)
