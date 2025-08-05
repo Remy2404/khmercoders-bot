@@ -8,21 +8,7 @@ Here's a minimal configuration to get your notification system running:
 # Required for all notifications
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ1234567890
 KC_DEV_CHAT_ID=-1001234567890
-
-# Optional - enable development mode for verbose logging
 DEV_MODE=false
-```
-
-## 2. GitHub Username Mapping (Optional)
-
-The system works with GitHub usernames by default. You can optionally add custom mappings in `src/config/notifications.ts`:
-
-```typescript
-mentions: {
-  // Optional: Map GitHub username → Telegram username
-  // 'github-username': '@telegram-username',
-  // Leave empty for open source projects
-}
 ```
 
 ## 3. GitHub Webhook Setup
@@ -126,28 +112,3 @@ crons = [
 🔀 #106 by @li-lay
 🔀 #108 by @meex
 ```
-
-## 🔧 Quick Troubleshooting
-
-**No notifications?**
-- ✅ Check webhook URL is correct
-- ✅ Verify TELEGRAM_BOT_TOKEN and KC_DEV_CHAT_ID
-- ✅ Ensure bot is added to the Telegram group
-- ✅ Check GitHub webhook delivery logs
-
-**Missing mentions?**
-- ✅ Mentions work automatically with GitHub usernames
-- ✅ Verify comment events are enabled in webhook
-- ✅ Add custom mappings only if needed
-
-**Want different notification styles?**
-- ✅ Modify templates in `src/config/notifications.ts`
-- ✅ Customize routing in `labelBasedRouting.ts`
-
-**Scheduled notifications not working?**
-- ✅ Set up cron triggers in `wrangler.toml`
-- ✅ Or use external cron to POST `/notifications/scheduled`
-
-## 🚀 You're All Set!
-
-Your modular notification system is now configured and ready to keep your team informed about GitHub activity in real-time!
