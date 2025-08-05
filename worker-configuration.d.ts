@@ -8,6 +8,9 @@ declare namespace Cloudflare {
 		DB: D1Database;
 		AI: Ai;
 		ASSETS: Fetcher;
+		KC_DEV_CHAT_ID: string;
+		GITHUB_WEBHOOK_SECRET: string;
+		GITHUB_TOKEN?: string;
 	}
 }
 interface CloudflareBindings extends Cloudflare.Env {}
